@@ -1,0 +1,242 @@
+﻿<body>
+        <div id="longDesc">
+            <h1 style="color:#2e74b5; font-family:Calibri Light; font-size:large">Introduction</h1>
+            <div id="longDesc">
+                <span style="font-family:Calibri; font-size:medium">
+                    <p>
+                        The<strong> xPendingReboot</strong> module is a part of the Windows PowerShell Desired State Configuration (DSC) Resource Kit, which is a collection of DSC Resources produced by the PowerShell Team. This module contains the xPendingReboot resource. xPendingReboot
+                        examines three specific registry locations where a Windows Server might indicate that a reboot is pending and allows DSC to predictably handle the condition.
+                    </p>
+                    <p>
+                        <strong>All of the resources in the DSC Resource Kit are provided AS IS, and are not supported through any Microsoft standard support program or service. The &quot;x&quot; in xPendingReboot stands for experimental</strong>, which means that these resources will be
+                        <strong>fix forward</strong> and monitored by the module owner(s).
+                    </p>
+                    <p>Please leave comments, feature requests, and bug reports in the Q &amp; A tab for this module.</p>
+                    <p>
+                        If you would like to modify <strong>xPendingReboot</strong> module, feel free. When modifying, please update the module name, resource friendly name, and MOF class name (instructions below). As specified in the license, you may copy or modify this resource
+                        as long as they are used on the Windows Platform.
+                    </p>
+                    <p>
+                        For more information about Windows PowerShell Desired State Configuration, check out the blog posts on the
+                        <a href="http://blogs.msdn.com/b/powershell/"><span style="color:#0000ff">PowerShell Blog</span></a> (<a href="http://blogs.msdn.com/b/powershell/archive/2013/11/01/configuration-in-a-devops-world-windows-powershell-desired-state-configuration.aspx"><span style="color:#0000ff">this</span></a>
+                        is a good starting point). There are also great community resources, such as <a href="http://powershell.org/wp/tag/dsc/">
+                            <span style="color:#0000ff">PowerShell.org</span>
+                        </a>, or <a href="http://www.powershellmagazine.com/tag/dsc/">
+                            <span style="color:#0000ff">PowerShell Magazine</span>
+                        </a>. For more information on the DSC Resource Kit, check out
+                        <a href="http://go.microsoft.com/fwlink/?LinkID=389546"><span style="color:#0000ff">this blog post</span></a>.
+                    </p>
+                    <h1 style="color:#2e74b5; font-family:Calibri Light; font-size:large">Installation</h1>
+                    <p>To install <strong>xPendingReboot</strong> module</p>
+                    <ul style="list-style-type:disc; direction:ltr">
+                        <li>Unzip the content under $env:ProgramFiles\WindowsPowerShell\Modules folder </li>
+                    </ul>
+                    <p>To confirm installation:</p>
+                    <ul style="list-style-type:disc; direction:ltr">
+                        <li>
+                            Run <strong>Get-DSCResource</strong> to see that <strong>xPendingReboot</strong> is among the DSC Resources listed
+                        </li>
+                    </ul>
+                    <h1 style="color:#2e74b5; font-family:Calibri Light; font-size:large">Requirements</h1>
+                    <p>
+                        This module requires the latest version of PowerShell (v4.0, which ships in Windows 8.1 or Windows Server 2012R2). To easily use PowerShell 4.0 on older operating systems,
+                        <a href="http://www.microsoft.com/en-us/download/details.aspx?id=40855"><span style="color:#0000ff">install WMF 4.0</span></a>. Please read the installation instructions that are present on both the download page and the release notes for WMF 4.0.
+                    </p>
+                    <h1 style="color:#2e74b5; font-family:Calibri Light; font-size:large">Description</h1>
+                    <p>
+                        The <strong>xPendingReboot</strong> module containes the <strong>xPendingReboot</strong> resource, which examines three specific registry locations where a Windows Server might indicate that a reboot is pending, and allows DSC to predictably handle the condition.
+                        PowerShell Desired State Configuration determines how to handle pending reboot conditions using the Local Configuration Management setting RebootNodeIfNeeded. When DSC resources require reboot, within a Set statement in a DSC Resource the global variable DSCMachineStatus
+                        is set to value &ldquo;1&rdquo;. When this condition occurs and RebootNodeIfNeeded is set to &ldquo;True&rdquo;, DSC reboots the machine after a successful Set. Otherwise, the reboot is postponed.
+                    </p>
+                    <h1 style="color:#2e74b5; font-family:Calibri Light; font-size:large">Details</h1>
+                    <p><strong>xPendingReboot</strong> resource has following properties:</p>
+                    <ul style="list-style-type:disc; direction:ltr">
+                        <li>
+                            <strong>Name</strong>:<span>
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                            </span>REQUIRED parameter that must be unique per instance of the resource within a configuration.
+                        </li>
+                        <li>
+                            <strong>ComponentBasedServicing</strong>:&nbsp;&nbsp;&nbsp;&nbsp;Read-Only Property: One of the locations that are examined by the resource. Details are returned by Get-DSCConfiguration.
+                        </li>
+                        <li>
+                            <strong>WindowsUpdate</strong>:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Read-Only Property: One of the locations that are examined by the resource. Details
+                            are returned by Get-DSCConfiguration.
+                        </li>
+                        <li>
+                            <strong>PendingFileRename</strong>:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Read-Only Property: One of the locations that are examined by the resource. Details are returned by Get-DSCConfiguration.
+                        </li>
+                        <li>
+                            <strong>PendingComputerRename</strong>:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Read-Only Property: One of thelocations that are examined by the resource. Details are returned by Get-DSCConfiguration.
+                        </li>
+                        <li>
+                            <strong>CcmClientSDK</strong>:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Read-Only Property: One of the locations that are examined by the resource. Details are returned by Get-DSCConfiguration.
+                        </li>
+
+                    </ul>
+                    <h1 style="color:#2e74b5; font-family:Calibri Light; font-size:large">Renaming Requirements</h1>
+                    <p>When making changes to these resources, we suggest the following practice:</p>
+                    <ol style="list-style-type:decimal; direction:ltr">
+                        <li>
+                            Update the following names by replacing MSFT with your company/community name and replacing the
+                            <strong>&quot;x&quot;</strong> with <strong>&quot;c&quot;</strong> (short for &quot;Community&quot;) or another prefix of your choice:
+                            <ul>
+                                <li>
+                                    <strong>Module name (ex: x<span style="font-family:Calibri; font-size:medium"><strong>PendingReboot</strong></span></strong> becomes
+                                    <strong>c<span style="font-family:Calibri; font-size:medium"><strong>PendingReboot</strong></span></strong>)
+                                </li>
+                                <li>
+                                    <strong>Resource folder (ex: MSFT_</strong><span style="font-family:Calibri; font-size:medium"><strong>xPendingReboot</strong></span> becomes
+                                    <strong>Contoso_x</strong><span style="font-family:Calibri; font-size:medium"><strong>PendingReboot</strong></span>)
+                                </li>
+                                <li>
+                                    <strong>Resource Name (ex: MSFT_<span style="font-family:Calibri; font-size:medium"><strong>xPendingReboot</strong></span></strong> becomes
+                                    <strong>Contoso_c</strong><span style="font-family:Calibri; font-size:medium"><strong>PendingReboot</strong></span>)
+                                </li>
+                                <li>
+                                    <strong>
+                                        Resource Friendly Name (ex: <span style="font-family:Calibri; font-size:medium">
+                                            <strong>xPendingReboot</strong>
+                                        </span>
+                                    </strong>becomes <strong>c<span style="font-family:Calibri; font-size:medium"><strong>PendingReboot</strong></span></strong>)
+                                </li>
+                                <li>
+                                    <strong>MOF class name (ex: MSFT_x<span style="font-family:Calibri; font-size:medium"><strong>PendingReboot</strong></span></strong> becomes
+                                    <strong>Contoso_c<span style="font-family:Calibri; font-size:medium"><strong>PendingReboot</strong></span></strong>)
+                                </li>
+                                <li>
+                                    <strong>Filename for the &lt;resource&gt;.schema.mof (ex: MSFT_x<span style="font-family:Calibri; font-size:medium"><strong>PendingReboot</strong></span></strong>.schema.mof becomes
+                                    <strong>Contoso_c<span style="font-family:Calibri; font-size:medium"><strong>PendingReboot</strong></span></strong>.schema.mof)
+                                </li>
+                            </ul>
+                        </li>
+                        <li>Update module and metadata information in the module manifest </li>
+                        <li>Update any configuration that use these resources </li>
+                    </ol>
+                    <p>
+                        <em>
+                            We reserve resource and module names without prefixes (&quot;x&quot; or &quot;c&quot;) for future use (e.g. &quot;MSFT_PendingReboot&quot;). If the next version of Windows Server ships with a &quot;PendingReboot&quot; resource, we do not want to break any configurations that use any community
+                            modifications. Please keep a prefix such as &quot;c&quot; on all community modifications.
+                        </em>
+                    </p>
+                    <h1 style="color:#2e74b5; font-family:Calibri Light; font-size:large">Versions</h1>
+                    <p>0.1.0.2</p>
+                    <ul style="list-style-type:disc; direction:ltr">
+                        <li>
+                            Documentation change, added information on PendingComputerRename and CcmClientSdk. No functional change. 
+                        </li>
+                    </ul>
+
+                    <p>0.1.0.1</p>
+                    <ul style="list-style-type:disc; direction:ltr">
+                        <li>
+                            Update with improvements to the Test- function, and how pending reboots are detected. 
+                        </li>
+                    </ul>
+                    <p>0.1.0.0</p>
+                    <ul style="list-style-type:disc; direction:ltr">
+                        <li>
+                            Initial release with the following resources
+                            <ul style="list-style-type:circle">
+                                <li><span style="font-family:Calibri; font-size:medium">xPendingReboot</span> </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <h1 style="margin-bottom:0pt; font-family:Calibri Light; color:#2e74b5; font-size:large">
+                        Example: Identify if reboots are pending and if so, reboot immediately (managed by DSC)
+                    </h1>
+                    <p>This configuration leverages xPendingReboot and sets the LCM setting to allow automatic reboots.</p>
+                    <div class="scriptcode">
+                        <div class="pluginEditHolder" plugincommand="mceScriptCode">
+                            <div class="title"><span>PowerShell</span></div>
+                            <div class="pluginLinkHolder"><span class="pluginEditHolderLink">Edit</span>|<span class="pluginRemoveHolderLink">Remove</span></div>
+                            <span class="hidden">powershell</span>
+<pre class="hidden">Configuration CheckForPendingReboot 
+{        
+    Node &lsquo;NodeName&rsquo; 
+    {  
+        xPendingReboot Reboot1
+        { 
+            Name = &lsquo;BeforeSoftwareInstall&rsquo;
+        }
+        LocalConfigurationManager
+        {
+            RebootNodeIfNeeded = 'True'
+        } 
+    }  
+} 
+  
+</pre>
+                            <div class="preview">
+<pre class="powershell">Configuration&nbsp;CheckForPendingReboot&nbsp;&nbsp;
+{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;Node&nbsp;&lsquo;NodeName&rsquo;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xPendingReboot&nbsp;Reboot1&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Name&nbsp;=&nbsp;&lsquo;BeforeSoftwareInstall&rsquo;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LocalConfigurationManager&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RebootNodeIfNeeded&nbsp;=&nbsp;<span class="powerShell__string">'True'</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;
+}&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;
+</pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="endscriptcode">&nbsp;</div>
+                    <h1 style="margin-bottom:0pt; font-family:Calibri Light; color:#2e74b5; font-size:large">
+                        Example: Identify if reboots are pending but do not automatically reboot (managed by DSC)
+                    </h1>
+                    <p>This configuration will install the hotfix from a URI that is connected to a particular hotfix ID. This configuration leverages xPendingReboot and sets the LCM setting to allow automatic reboots..</p>
+                    <p>&nbsp;</p>
+                    <div class="scriptcode">
+                        <div class="pluginEditHolder" plugincommand="mceScriptCode">
+                            <div class="title"><span>PowerShell</span></div>
+                            <div class="pluginLinkHolder"><span class="pluginEditHolderLink">Edit</span>|<span class="pluginRemoveHolderLink">Remove</span></div>
+                            <span class="hidden">powershell</span>
+<pre class="hidden">Configuration CheckForPendingReboot 
+{        
+    Node &lsquo;NodeName&rsquo; 
+    {  
+        xPendingReboot Reboot1
+        { 
+            Name = &lsquo;BeforeSoftwareInstall&rsquo;
+        }
+        LocalConfigurationManager
+        {
+            RebootNodeIfNeeded = 'False'
+        } 
+    }  
+} 
+</pre>
+                            <div class="preview">
+<pre class="powershell">Configuration&nbsp;CheckForPendingReboot&nbsp;&nbsp;
+{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;Node&nbsp;&lsquo;NodeName&rsquo;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xPendingReboot&nbsp;Reboot1&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Name&nbsp;=&nbsp;&lsquo;BeforeSoftwareInstall&rsquo;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LocalConfigurationManager&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RebootNodeIfNeeded&nbsp;=&nbsp;<span class="powerShell__string">'False'</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;
+}&nbsp;&nbsp;
+</pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="endscriptcode">&nbsp;</div>
+                </span>
+            </div>
+        </div>
+
+
+</body>
+</html>

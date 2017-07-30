@@ -1,0 +1,8 @@
+[ClassVersion("1.0.0.0"), FriendlyName("xFileSystemAccessRule")]
+class MSFT_xFileSystemAccessRule : OMI_BaseResource
+{
+    [Key, Description("The path to the item that should have permissions set")] string Path;
+    [Key, Description("The identity to set permissions for")] string Identity;
+    [Write, Description("The permissions to include in this rule, can be empty if ensure = absent"), ValueMap{"ListDirectory","ReadData","WriteData","CreateFiles","CreateDirectories","AppendData","ReadExtendedAttributes","WriteExtendedAttributes","Traverse","ExecuteFile","DeleteSubdirectoriesAndFiles","ReadAttributes","WriteAttributes","Write","Delete","ReadPermissions","Read","ReadAndExecute","Modify","ChangePermissions","TakeOwnership","Synchronize","FullControl"}, Values{"ListDirectory","ReadData","WriteData","CreateFiles","CreateDirectories","AppendData","ReadExtendedAttributes","WriteExtendedAttributes","Traverse","ExecuteFile","DeleteSubdirectoriesAndFiles","ReadAttributes","WriteAttributes","Write","Delete","ReadPermissions","Read","ReadAndExecute","Modify","ChangePermissions","TakeOwnership","Synchronize","FullControl"}] string Rights[];
+    [Write, Description("Present to create the rule, Absent to remove an existing rule"), ValueMap{"Present","Absent"}, Values{"Present","Absent"}] string Ensure;
+};

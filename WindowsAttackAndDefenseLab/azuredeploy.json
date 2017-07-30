@@ -1,0 +1,932 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "artifactsLocation": {
+      "type": "string"
+    },
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Auto-generated token to access artifactsLocation"
+      },
+      "defaultValue": ""
+    },
+    "subscriptionId": {
+      "type": "string"
+    },
+    "masterResourceGroup": {
+      "type": "string"
+    },
+    "studentSubnetName": {
+      "type": "string"
+    },
+    "virtualNetworkName": {
+      "type": "string"
+    },
+    "virtualNetworkAddressRange": {
+      "type": "string"
+    },
+    "localAdminusername": {
+      "type": "string"
+    },
+    "studentAdminusername": {
+      "type": "string"
+    },
+    "studentPassword": {
+      "type": "securestring"
+    },
+    "backupExecPassword": {
+      "type": "securestring"
+    },
+    "peterParkerPassword": {
+      "type": "securestring"
+    },
+    "pepperPottsPassword": {
+      "type": "securestring"
+    },
+    "tonyStarkPassword": {
+      "type": "securestring"
+    },
+    "storageAccountName": {
+      "type": "string"
+    },
+    "networkSecurityGroup": {
+      "type": "string"
+    },
+    "adAdminUsername": {
+      "type": "string"
+    },
+    "domainName": {
+      "type": "string"
+    },
+    "adVMName": {
+      "type": "string"
+    },
+    "adNicIpAddress": {
+      "type": "string"
+    },
+    "adVmSize": {
+      "type": "string"
+    },
+    "homeVmName": {
+      "type": "string"
+    },
+    "homeNicIpAddress": {
+      "type": "string"
+    },
+    "homeVmSize": {
+      "type": "string"
+    },
+    "homeOU": {
+      "type": "string"
+    },
+    "publicIpName": {
+      "type": "string"
+    },
+    "windowsImagePublisher": {
+      "type": "string"
+    },
+    "windowsImageOffer": {
+      "type": "string"
+    },
+    "windowsImageSku": {
+      "type": "string"
+    },
+    "terminalServerVMName": {
+      "type": "string"
+    },
+    "terminalServerNicIpAddress": {
+      "type": "string"
+    },
+    "terminalServerVmSize": {
+      "type": "string"
+    },
+    "terminalServerOU": {
+      "type": "string"
+    },
+    "userDesktopVMName": {
+      "type": "string"
+    },
+    "userDesktopNicIpAddress": {
+      "type": "string"
+    },
+    "userDesktopVmSize": {
+      "type": "string"
+    },
+    "userDesktopOU": {
+      "type": "string"
+    },
+    "linuxVMName": {
+      "type": "string"
+    },
+    "linuxNicIpAddress": {
+      "type": "string"
+    },
+    "linuxVmSize": {
+      "type": "string"
+    },
+    "linuxImagePublisher": {
+      "type": "string"
+    },
+    "linuxImageOffer": {
+      "type": "string"
+    },
+    "linuxImageSku": {
+      "type": "string"
+    },
+    "filesUrl": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "vnetID": "[resourceId(resourceGroup().name, 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
+    "subnetId": "[concat(variables('vnetID'),'/subnets/', parameters('studentSubnetName'))]",
+    "adNicName": "[concat(parameters('adVmName'), '-nic')]",
+    "linuxNicName": "[concat(parameters('linuxVmName'), '-nic')]",
+    "homeNicName": "[concat(parameters('homeVmName'),'-nic')]",
+    "terminalServerNicName": "[concat(parameters('terminalServerVmName'),'-nic')]",
+    "userDesktopNicName": "[concat(parameters('userDesktopVmName'),'-nic')]",
+    "domainJoinOptions": "3"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[parameters('storageAccountName')]",
+      "apiVersion": "2016-01-01",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "Storage",
+      "properties": {},
+      "tags": {
+        "displayName": "StorageAccount"
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[parameters('virtualNetworkName')]",
+      "apiVersion": "2016-03-30",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('virtualNetworkAddressRange')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[parameters('studentSubnetName')]",
+            "properties": {
+              "addressPrefix": "[parameters('virtualNetworkAddressRange')]",
+              "networkSecurityGroup": {
+                "id": "[concat('/subscriptions/', parameters('subscriptionId'), '/resourceGroups/', parameters('masterResourceGroup'), '/providers/Microsoft.Network/networkSecurityGroups/', parameters('networkSecurityGroup'))]"
+              }
+            }
+          }
+        ]
+      },
+      "tags": {
+        "displayName": "VirtualNetwork"
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('adNicName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[parameters('adNicIpAddress')]",
+              "subnet": {
+                "id": "[variables('subnetId')]"
+              }
+            }
+          }
+        ]
+      },
+      "tags": {
+        "displayName": "DomainControllerNic"
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('adNicName'))]"
+      ],
+      "location": "[resourceGroup().location]",
+      "name": "[parameters('adVmName')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('adVmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('adVmName')]",
+          "adminUsername": "[parameters('adAdminUsername')]",
+          "adminPassword": "[parameters('studentPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[parameters('windowsImagePublisher')]",
+            "offer": "[parameters('windowsImageOffer')]",
+            "sku": "[parameters('windowsImageSku')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('adVmName'), 'disk0.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          },
+          "dataDisks": [
+            {
+              "name": "datadisk",
+              "vhd": {
+                "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('adVmName'), 'disk1.vhd')]"
+              },
+              "caching": "None",
+              "createOption": "Empty",
+              "diskSizeGB": "1000",
+              "lun": 0
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('adNicName'))]"
+            }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "type": "extensions",
+          "name": "CreateADForest",
+          "apiVersion": "2015-06-15",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Compute/virtualMachines', parameters('adVmName'))]"
+          ],
+          "properties": {
+            "publisher": "Microsoft.Powershell",
+            "type": "DSC",
+            "typeHandlerVersion": "2.19",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "ModulesUrl": "[concat(parameters('artifactsLocation'), '/DSC/DomainConfig.zip', parameters('_artifactsLocationSasToken'))]",
+              "ConfigurationFunction": "DomainConfig.ps1\\DomainConfig",
+              "Properties": {
+                "DomainName": "[parameters('domainName')]",
+                "AdminCreds": {
+                  "UserName": "[parameters('adAdminUsername')]",
+                  "Password": "PrivateSettingsRef:StudentPassword"
+                },
+                "StudentCreds": {
+                  "UserName": "[parameters('studentAdminusername')]",
+                  "Password": "PrivateSettingsRef:StudentPassword"
+                },
+                "BackupExecCreds": {
+                  "UserName": "BackupExec",
+                  "Password": "PrivateSettingsRef:BackupExecPassword"
+                },
+                "PeterParkerCreds": {
+                  "UserName": "PeterParker",
+                  "Password": "PrivateSettingsRef:PeterParkerPassword"
+                },
+                "PepperPottsCreds": {
+                  "UserName": "PepperPotts",
+                  "Password": "PrivateSettingsRef:PepperPottsPassword"
+                },
+                "TonyStarkCreds": {
+                  "UserName": "TonyStark",
+                  "Password": "PrivateSettingsRef:TonyStarkPassword"
+                },
+                "filesUrl": "[parameters('filesUrl')]",
+                "linuxNicIpAddress": "[parameters('linuxNicIpAddress')]"
+              }
+            },
+            "protectedSettings": {
+              "Items": {
+                "StudentPassword": "[parameters('studentPassword')]",
+                "BackupExecPassword": "[parameters('backupExecPassword')]",
+                "PeterParkerPassword": "[parameters('peterParkerPassword')]",
+                "PepperPottsPassword": "[parameters('PepperPottsPassword')]",
+                "TonyStarkPassword": "[parameters('TonyStarkPassword')]"
+              }
+            }
+          }
+        }
+      ],
+      "tags": {
+        "displayName": "DomainControllerVM"
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('linuxNicName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[parameters('linuxNicIPAddress')]",
+              "subnet": {
+                "id": "[variables('subnetId')]"
+              }
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": [
+            "[parameters('adNicIpAddress')]",
+            "8.8.8.8",
+            "8.8.4.4"
+          ]
+        }
+      },
+      "tags": {
+        "displayName": "LinuxNic"
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('linuxVmName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('linuxNicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('linuxVmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('linuxVmName')]",
+          "adminUsername": "[parameters('localAdminusername')]",
+          "adminPassword": "[parameters('studentPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[parameters('linuxImagePublisher')]",
+            "offer": "[parameters('linuxImageOffer')]",
+            "sku": "[parameters('linuxImageSku')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('linuxVmName'), 'disk0.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          },
+          "dataDisks": [
+            {
+              "name": "data-disk1",
+              "vhd": {
+                "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('linuxVmName'), 'disk1.vhd')]"
+              },
+              "caching": "None",
+              "createOption": "Empty",
+              "diskSizeGB": "1000",
+              "lun": 0
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('linuxNicName'))]"
+            }
+          ]
+        }
+      },
+      "tags": {
+        "displayName": "LinuxVM"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('linuxVmName'),'/bootstrap')]",
+      "apiVersion": "2016-03-30",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('linuxVmName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.0",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": [
+            "https://eviltraining.blob.core.windows.net/files/linux-bootstrap.sh"
+          ],
+          "commandToExecute": "bash linux-bootstrap.sh"
+        }
+      },
+      "tags": {
+        "displayName": "LinuxVmBootstrap"
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[parameters('publicIpName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('homeVmName')]"
+        }
+      },
+      "tags": {
+        "displayName": "PublicIPAddress"
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('homeNicName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[parameters('homeNicIpAddress')]",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName'))]"
+              },
+              "subnet": {
+                "id": "[variables('subnetId')]"
+              }
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": [
+            "[parameters('adNicIpAddress')]"
+          ]
+        }
+      },
+      "tags": {
+        "displayName": "homeNic"
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('homeVmName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('homeNicName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('homeVmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('homeVmName')]",
+          "adminUsername": "[parameters('localAdminUsername')]",
+          "adminPassword": "[parameters('studentPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[parameters('windowsImagePublisher')]",
+            "offer": "[parameters('windowsimageOffer')]",
+            "sku": "[parameters('windowsImageSku')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('homeVmName'), 'disk0.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          },
+          "dataDisks": [
+            {
+              "name": "data-disk1",
+              "vhd": {
+                "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('homeVmName'), 'disk1.vhd')]"
+              },
+              "caching": "None",
+              "createOption": "Empty",
+              "diskSizeGB": "1000",
+              "lun": 0
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('homeNicName'))]"
+            }
+          ]
+        }
+      },
+      "tags": {
+        "displayName": "homeVm"
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('homeVmName'),'/joindomain')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('homeVmName'))]",
+        "[resourceId(parameters('subscriptionId'), resourceGroup().name,'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "JsonADDomainExtension",
+        "typeHandlerVersion": "1.3",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "Name": "[parameters('domainName')]",
+          "OUPath": "[parameters('homeOu')]",
+          "User": "[concat(parameters('domainName'), '\\', parameters('adAdminUserName'))]",
+          "Restart": "true",
+          "Options": "[variables('domainJoinOptions')]"
+        },
+        "protectedsettings": {
+          "Password": "[parameters('studentPassword')]"
+        }
+      },
+      "tags": {
+        "displayName": "homeDomainJoin"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('homeVmName'),'/dscHomeConfig')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('homeVmName'),'joinDomain')]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.19",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "wmfVersion": "5.0",
+          "modulesUrl": "[concat(parameters('artifactsLocation'), '/DSC/HomeConfig.zip', parameters('_artifactsLocationSasToken'))]",
+          "configurationFunction": "HomeConfig.ps1\\HomeConfig",
+          "Properties": {
+            "DomainName": "[parameters('domainName')]",
+            "AdminCreds": {
+              "UserName": "[parameters('adAdminUsername')]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            },
+            "filesUrl": "[parameters('filesUrl')]"
+          }
+        },
+        "protectedSettings": {
+          "Items": {
+            "AdminPassword": "[parameters('studentPassword')]"
+          }
+        }
+      },
+      "tags": {
+        "displayName": "homeDsc"
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('terminalServerNicName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[parameters('terminalServerNicIpAddress')]",
+              "subnet": {
+                "id": "[variables('subnetId')]"
+              }
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": [
+            "[parameters('adNicIpAddress')]"
+          ]
+        }
+      },
+      "tags": {
+        "displayName": "terminalServerNic"
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('terminalServerVmName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('terminalServerNicName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('terminalServerVmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('terminalServerVmName')]",
+          "adminUsername": "[parameters('localAdminUsername')]",
+          "adminPassword": "[parameters('studentPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[parameters('windowsImagePublisher')]",
+            "offer": "[parameters('windowsImageOffer')]",
+            "sku": "[parameters('windowsImageSku')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('terminalServerVmName'), 'disk0.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          },
+          "dataDisks": [
+            {
+              "name": "data-disk1",
+              "vhd": {
+                "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('terminalServerVmName'), 'disk1.vhd')]"
+              },
+              "caching": "None",
+              "createOption": "Empty",
+              "diskSizeGB": "1000",
+              "lun": 0
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('terminalServerNicName'))]"
+            }
+          ]
+        }
+      },
+      "tags": {
+        "displayName": "terminalServerVm"
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('terminalServerVmName'),'/joindomain')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('terminalServerVmName'))]",
+        "[resourceId(parameters('subscriptionId'), resourceGroup().name,'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "JsonADDomainExtension",
+        "typeHandlerVersion": "1.3",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "Name": "[parameters('domainName')]",
+          "OUPath": "[parameters('terminalServerOu')]",
+          "User": "[concat(parameters('domainName'), '\\', parameters('adAdminUserName'))]",
+          "Restart": "true",
+          "Options": "[variables('domainJoinOptions')]"
+        },
+        "protectedsettings": {
+          "Password": "[parameters('studentPassword')]"
+        }
+      },
+      "tags": {
+        "displayName": "terminalServerDomainJoin"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('terminalServerVmName'),'/dscServerConfig')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('terminalServerVmName'),'joinDomain')]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.19",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "wmfVersion": "5.0",
+          "modulesUrl": "[concat(parameters('artifactsLocation'), '/DSC/terminalServerConfig.zip', parameters('_artifactsLocationSasToken'))]",
+          "configurationFunction": "terminalServerConfig.ps1\\terminalServerConfig",
+          "Properties": {
+            "DomainName": "[parameters('domainName')]",
+            "AdminCreds": {
+              "UserName": "[parameters('adAdminUsername')]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            }
+          }
+        },
+        "protectedSettings": {
+          "Items": {
+            "AdminPassword": "[parameters('studentPassword')]"
+          }
+        }
+      },
+      "tags": {
+        "displayName": "terminalServerDsc"
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('userDesktopNicName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[parameters('userDesktopNicIpAddress')]",
+              "subnet": {
+                "id": "[variables('subnetId')]"
+              }
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": [
+            "[parameters('adNicIpAddress')]"
+          ]
+        }
+      },
+      "tags": {
+        "displayName": "userDesktopNic"
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('userDesktopVmName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('userDesktopNicName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('userDesktopVmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('userDesktopVmName')]",
+          "adminUsername": "[parameters('localAdminUsername')]",
+          "adminPassword": "[parameters('studentPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[parameters('windowsImagePublisher')]",
+            "offer": "[parameters('windowsImageOffer')]",
+            "sku": "[parameters('windowsImageSku')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('userDesktopVmName'), 'disk0.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          },
+          "dataDisks": [
+            {
+              "name": "data-disk1",
+              "vhd": {
+                "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('userDesktopVmName'), 'disk1.vhd')]"
+              },
+              "caching": "None",
+              "createOption": "Empty",
+              "diskSizeGB": "1000",
+              "lun": 0
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('userDesktopNicName'))]"
+            }
+          ]
+        }
+      },
+      "tags": {
+        "displayName": "userDesktopVm"
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('userDesktopVmName'),'/joindomain')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('userDesktopVmName'))]",
+        "[resourceId(parameters('subscriptionId'), resourceGroup().name,'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "JsonADDomainExtension",
+        "typeHandlerVersion": "1.3",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "Name": "[parameters('domainName')]",
+          "OUPath": "[parameters('userDesktopOu')]",
+          "User": "[concat(parameters('domainName'), '\\', parameters('adAdminUserName'))]",
+          "Restart": "true",
+          "Options": "[variables('domainJoinOptions')]"
+        },
+        "protectedsettings": {
+          "Password": "[parameters('studentPassword')]"
+        }
+      },
+      "tags": {
+        "displayName": "userDesktopDomainJoin"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('userDesktopVmName'),'/dscServerConfig')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('userDesktopVmName'),'joinDomain')]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.19",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "wmfVersion": "5.0",
+          "modulesUrl": "[concat(parameters('artifactsLocation'), '/DSC/userDesktopConfig.zip', parameters('_artifactsLocationSasToken'))]",
+          "configurationFunction": "userDesktopConfig.ps1\\userDesktopConfig",
+          "Properties": {
+            "DomainName": "[parameters('domainName')]",
+            "AdminCreds": {
+              "UserName": "[parameters('adAdminUsername')]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            }
+          }
+        },
+        "protectedSettings": {
+          "Items": {
+            "AdminPassword": "[parameters('studentPassword')]"
+          }
+        }
+      },
+      "tags": {
+        "displayName": "userDesktopDsc"
+      }
+    }
+  ]
+}

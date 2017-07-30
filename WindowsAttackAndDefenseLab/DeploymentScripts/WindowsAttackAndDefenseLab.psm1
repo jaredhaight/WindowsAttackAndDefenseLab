@@ -1,0 +1,1 @@
+Get-ChildItem .\DeploymentScripts | Where-Object { $_.Extension -eq ".ps1" } | ForEach-Object { Import-Module $_.FullName -DisableNameChecking }
