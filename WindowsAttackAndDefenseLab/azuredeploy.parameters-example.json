@@ -1,17 +1,29 @@
 {
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
-  "parameters": {
-    "BackupExecPassword":{
+  "parameters": {    
+    "BackupUsername":{
+      "value": "Username123"
+    },
+    "HelpdeskUsername":{
+      "value": "Username123"
+    },
+    "AccountingUsername":{
+      "value": "Username123"
+    },
+    "ServerAdminUsername":{
+      "value": "Username123"
+    },
+    "BackupPassword":{
       "value": "Password123"
     },
-    "PeterParkerPassword":{
+    "HelpdeskPassword":{
       "value": "Password123"
     },
-    "PepperPottsPassword":{
+    "AccountingPassword":{
       "value": "Password123"
     },
-    "TonyStarkPassword":{
+    "ServerAdminPassword":{
       "value": "Password123"
     }
   }

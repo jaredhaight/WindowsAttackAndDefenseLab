@@ -70,14 +70,13 @@ configuration HomeConfig
         Credential = $DomainCreds    
         PsDscRunAsCredential = $DomainCreds
     }
-    Script DisableFirewall
+    Group AddClassRDPGroup
     {
-        SetScript =  { 
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DisableFirewall] Running.."
-            Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
-        }
-        GetScript =  { @{} }
-        TestScript = { $false }
+        GroupName='Remote Desktop Users'   
+        Ensure= 'Present'             
+        MembersToInclude= "$DomainName\Class Remote Desktop Access"
+        Credential = $DomainCreds    
+        PsDscRunAsCredential = $DomainCreds
     }
     Script DownloadClassFiles
     {

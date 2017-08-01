@@ -1,4 +1,3 @@
-configuration ServerConfig 
 {
    param 
    ( 
@@ -22,49 +21,16 @@ configuration ServerConfig
     WindowsFeature WebServer
     {
         Ensure = "Present" 
-        Name = "Web-Server"
-    }
-    Script DisableFirewall
-    {
-        SetScript =  { 
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DisableFirewall] Running.."
-            Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
-        }
-        GetScript =  { @{} }
-        TestScript = { $false }
-    }
-
-    Group AddLocalAdminsGroup
-    {
-        GroupName='Administrators'   
-        Ensure= 'Present'             
-        MembersToInclude= "$DomainName\LocalAdmins"
-        Credential = $DomainCreds    
-        PsDscRunAsCredential = $DomainCreds
+        Name = "RDS-RD-Server"
     }
     Group AddRDPAccessGroup
     {
         GroupName='Remote Desktop Users'   
         Ensure= 'Present'             
-        MembersToInclude= "$DomainName\RDP Access"
+        MembersToInclude= "$DomainName\Domain Users"
         Credential = $DomainCreds    
         PsDscRunAsCredential = $DomainCreds
     }
-    File DataFolder
-    {
-        Ensure = "Present"
-        DestinationPath = "C:\Data"
-        Type = "Directory"
-        Force = $true
-    }
-    xSmbShare DataShare
-    {
-        Ensure = "Present" 
-        Name   = "Data"
-        Path = "C:\Data"  
-        FullAccess = "Everyone"
-        DependsOn = "[File]DataFolder"
-    } 
     Script UpdateHelp
     {
         SetScript =  { 

@@ -12,16 +12,16 @@
   [System.Management.Automation.PSCredential]$StudentCreds,
 
   [Parameter(Mandatory)]
-  [System.Management.Automation.PSCredential]$PeterParkerCreds,
+  [System.Management.Automation.PSCredential]$HelpDeskUserCreds,
   
   [Parameter(Mandatory)]
-  [System.Management.Automation.PSCredential]$PepperPottsCreds,
+  [System.Management.Automation.PSCredential]$AccountingUserCreds,
   
   [Parameter(Mandatory)]
-  [System.Management.Automation.PSCredential]$TonyStarkCreds,
+  [System.Management.Automation.PSCredential]$ServerAdminCreds,
   
   [Parameter(Mandatory)]
-  [System.Management.Automation.PSCredential]$BackupExecCreds,
+  [System.Management.Automation.PSCredential]$BackupUserCreds,
 
   [Parameter(Mandatory)]
   [string]$filesUrl,
@@ -36,10 +36,10 @@
   Import-DscResource -ModuleName xActiveDirectory, xDisk, xNetworking, cDisk,xDnsServer, PSDesiredStateConfiguration
   [System.Management.Automation.PSCredential]$DomainAdminCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
   [System.Management.Automation.PSCredential]$DomainStudentCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($StudentCreds.UserName)", $StudentCreds.Password)
-  [System.Management.Automation.PSCredential]$DomainBackupExecCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($BackupExecCreds.UserName)", $BackupExecCreds.Password)
-  [System.Management.Automation.PSCredential]$DomainPeterParkerCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($PeterParkerCreds.UserName)", $PeterParkerCreds.Password)
-  [System.Management.Automation.PSCredential]$DomainPepperPottsCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($PepperPottsCreds.UserName)", $PepperPottsCreds.Password)
-  [System.Management.Automation.PSCredential]$DomainTonyStarkCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($TonyStarkCreds.UserName)", $TonyStarkCreds.Password)
+  [System.Management.Automation.PSCredential]$DomainBackupUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($BackupUserCreds.UserName)", $BackupUserCreds.Password)
+  [System.Management.Automation.PSCredential]$DomainHelpDeskUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($HelpDeskUserCreds.UserName)", $HelpDeskUserCreds.Password)
+  [System.Management.Automation.PSCredential]$DomainAccountingUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($AccountingUserCreds.UserName)", $AccountingUserCreds.Password)
+  [System.Management.Automation.PSCredential]$DomainServerAdminCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($ServerAdminCreds.UserName)", $ServerAdminCreds.Password)
   
   $Interface=Get-NetAdapter | Where-Object Name -Like "Ethernet*" | Select-Object -First 1
   $InterfaceAlias=$($Interface.Name)
@@ -146,9 +146,10 @@
         Zone = $DomainName
         Type = "ARecord"
         Ensure = "Present"
+        DependsOn="[WindowsFeature]DNS"
     }
 
-    Script script1
+    Script DnsDiagnosticsScript
     {
       SetScript =  { 
         Set-DnsServerDiagnostics -All $true
@@ -285,7 +286,7 @@
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = "StudentUser"
+        UserName = $($StudentUserCreds.Username)
         Password = $DomainStudentCreds
         Ensure = "Present"
         Path = "OU=Users,OU=Class,DC=ad,DC=waad,DC=training"
@@ -295,38 +296,38 @@
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = "StudentAdmin"
+        UserName = $($StudentAdminCreds.Username)
         Password = $DomainStudentCreds
         Ensure = "Present"
         Path = "OU=Users,OU=Class,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ClassUsersOU"
     }
-    xADUser PeterParker
+    xADUser HelpdeskUser
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = "PeterParker"
-        Password = $DomainPeterParkerCreds
+        UserName = $($HelpDeskUserCreds.Username)
+        Password = $DomainHelpDeskUserCreds
         Ensure = "Present"
         Path = "OU=User,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionUsersOU"
     }
-    xADUser PepperPotts
+    xADUser AccountingUser
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = "PepperPotts"
-        Password = $DomainPepperPottsCreds
+        UserName = $($AccountingUserCreds.Username)
+        Password = $DomainAccountingUserCreds
         Ensure = "Present"
         Path = "OU=User,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionUsersOU"
     }
-    xADUser TonyStark
+    xADUser ServerAdmin
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = "TonyStark"
-        Password = $DomainTonyStarkCreds
+        UserName = $($ServerAdminCreds.Username)
+        Password = $DomainServerAdminCreds
         Ensure = "Present"
         Path = "OU=User,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionUsersOU"
@@ -335,8 +336,8 @@
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = "BackupExec"
-        Password = $DomainBackupExecCreds
+        UserName = $($BackupUserCreds.Username)
+        Password = $DomainBackupUserCreds
         Ensure = "Present"
         Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
@@ -367,8 +368,8 @@
     {
       GroupName = "Domain Admins"
       Ensure = 'Present'
-      MembersToInclude = "BackupExec"
-      DependsOn = "[xADUser]BackupExecUser"
+      MembersToInclude = $($BackupUserCreds.Username), $($ServerAdminCreds.Username)
+      DependsOn = "[xADUser]BackupExecUser", "[xADUser]ServerAdmin"
     }
     xADGroup AccountingUsers
     {
@@ -377,9 +378,9 @@
       Category = "Security"
       Description = "Conjurers of Arithmetic and Paperwork"
       Ensure = 'Present'
-      MembersToInclude = "PepperPotts"
+      MembersToInclude = $($AccountingUserCreds.Username)
       Path = "OU=Groups,OU=Production,DC=ad,DC=waad,DC=training"
-      DependsOn = "[xADOrganizationalUnit]ProductionGroupsOU", "[xADUser]PepperPotts"
+      DependsOn = "[xADOrganizationalUnit]ProductionGroupsOU", "[xADUser]AccountingUser"
     }
     xADGroup HelpdeskUsers
     {
@@ -388,9 +389,9 @@
       Category = "Security"
       Description = "The valiant frontline of IT Support"
       Ensure = 'Present'
-      MembersToInclude = "PeterParker"
+      MembersToInclude = $($HelpDeskUserCreds.Username)
       Path = "OU=Groups,OU=Production,DC=ad,DC=waad,DC=training"
-      DependsOn = "[xADOrganizationalUnit]ProductionGroupsOU", "[xADUser]PeterParker"
+      DependsOn = "[xADOrganizationalUnit]ProductionGroupsOU", "[xADUser]HelpdeskUser"
     }
     LocalConfigurationManager 
     {
