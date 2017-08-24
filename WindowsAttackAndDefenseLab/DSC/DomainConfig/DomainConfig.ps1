@@ -7,21 +7,21 @@
 
   [Parameter(Mandatory)]
   [System.Management.Automation.PSCredential]$Admincreds,
-
+  
   [Parameter(Mandatory)]
   [System.Management.Automation.PSCredential]$StudentCreds,
+    
+  [Parameter(Mandatory)]
+  [System.Management.Automation.PSCredential]$BackupUserCreds,
 
   [Parameter(Mandatory)]
   [System.Management.Automation.PSCredential]$HelpDeskUserCreds,
-  
+
   [Parameter(Mandatory)]
   [System.Management.Automation.PSCredential]$AccountingUserCreds,
-  
-  [Parameter(Mandatory)]
+
+    [Parameter(Mandatory)]
   [System.Management.Automation.PSCredential]$ServerAdminCreds,
-  
-  [Parameter(Mandatory)]
-  [System.Management.Automation.PSCredential]$BackupUserCreds,
 
   [Parameter(Mandatory)]
   [string]$filesUrl,
@@ -40,6 +40,13 @@
   [System.Management.Automation.PSCredential]$DomainHelpDeskUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($HelpDeskUserCreds.UserName)", $HelpDeskUserCreds.Password)
   [System.Management.Automation.PSCredential]$DomainAccountingUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($AccountingUserCreds.UserName)", $AccountingUserCreds.Password)
   [System.Management.Automation.PSCredential]$DomainServerAdminCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($ServerAdminCreds.UserName)", $ServerAdminCreds.Password)
+
+  $AdminUserName = $Admincreds.UserName
+  $StudentUserName = $StudentCreds.UserName
+  $BackupUserUsername = $BackupUserCreds.UserName
+  $HelpDeskUserUsername = $HelpDeskUserCreds.UserName
+  $AccountingUserUsername = $AccountingUserCreds.UserName
+  $ServerAdminUsername = $ServerAdminCreds.UserName
   
   $Interface=Get-NetAdapter | Where-Object Name -Like "Ethernet*" | Select-Object -First 1
   $InterfaceAlias=$($Interface.Name)
@@ -48,6 +55,7 @@
   {
     Script AddADDSFeature {
       SetScript = {
+        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[AddADDSFeature] Installing ADDS.."
         Add-WindowsFeature "AD-Domain-Services" -ErrorAction SilentlyContinue   
       }
       GetScript =  { @{} }
@@ -56,7 +64,7 @@
     Script DownloadBootstrapFiles
     {
         SetScript =  { 
-            $file = $using:filesUrl + 'dc-bootstrap.zip'
+            $file = $using:filesUrl + 'DCBootstrapFiles.zip'
             Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadBootstrapFiles] Downloading $file"
             Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\bootstrap.zip
         }
@@ -83,7 +91,7 @@
             Import-GPO -Path "C:\Bootstrap" -BackupId '{E3488702-D836-4F95-9E50-AD2844B0864C}' -TargetName "Server Permissions"
             Import-GPO -Path "C:\Bootstrap" -BackupId '{43D456E8-BED3-46F3-BD64-BF0A97913E36}' -TargetName "Class Default"
             New-GPLink -Name "Class Default" -Target "DC=AD,DC=WAAD,DC=TRAINING"
-            New-GPLink -Name "Server Permissions" -Target "OU=SERVERS,OU=CLASS,DC=AD,DC=WAAD,DC=TRAINING"
+            New-GPLink -Name "Server Permissions" -Target "OU=SERVERS,OU=PRODUCTION,DC=AD,DC=WAAD,DC=TRAINING"
           }
           Catch {
             Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[ImportGPOs] Failed.."
@@ -93,14 +101,14 @@
         }
         GetScript =  { @{} }
         TestScript = { $false }
-        DependsOn = "[Archive]UnzipBootstrapFiles","[xADOrganizationalUnit]ServersOU"
+        DependsOn = "[Archive]UnzipBootstrapFiles","[xADOrganizationalUnit]ProductionServersOU"
     }
     Script CreateFillerUsers
     {
         SetScript =  {
             Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[CreateFillerUsers] Running.."
             $users = Import-Csv C:\Bootstrap\user_data.csv
-            $userOus = Get-ADOrganizationalUnit -Filter * -SearchBase "OU=Staff,DC=ad,dc=waad,dc=training"
+            $userOus = Get-ADOrganizationalUnit -Filter * -SearchBase "OU=Staff,OU=Production,DC=ad,dc=waad,dc=training"
 
             forEach ($user in $users) {
                 $username = $user.username
@@ -132,7 +140,7 @@
         }
         GetScript =  { @{} }
         TestScript = { $false }
-        DependsOn = "[Archive]UnzipBootstrapFiles","[xADOrganizationalUnit]NewYorkOU","[xADOrganizationalUnit]CharlotteOU","[xADOrganizationalUnit]PaloAltoOU"
+        DependsOn = "[Archive]UnzipBootstrapFiles","[xADOrganizationalUnit]ProductionStaffOU"
     }
     WindowsFeature DNS 
     { 
@@ -152,6 +160,7 @@
     Script DnsDiagnosticsScript
     {
       SetScript =  { 
+        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DnsDiagnosticsScript] Enabling DNS Diagnostics"
         Set-DnsServerDiagnostics -All $true
         Write-Verbose -Verbose "Enabling DNS client diagnostics" 
       }
@@ -199,9 +208,6 @@
       DomainName = $DomainName
       DomainAdministratorCredential = $DomainAdminCreds
       SafemodeAdministratorPassword = $DomainAdminCreds
-      DatabasePath = "F:\NTDS"
-      LogPath = "F:\NTDS"
-      SysvolPath = "F:\SYSVOL"
       DependsOn = "[WindowsFeature]ADDSInstall"
     } 
     xWaitForADDomain DscForestWait
@@ -286,7 +292,7 @@
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = $($StudentUserCreds.Username)
+        UserName = "StudentUser"
         Password = $DomainStudentCreds
         Ensure = "Present"
         Path = "OU=Users,OU=Class,DC=ad,DC=waad,DC=training"
@@ -296,7 +302,7 @@
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = $($StudentAdminCreds.Username)
+        UserName = "StudentAdmin"
         Password = $DomainStudentCreds
         Ensure = "Present"
         Path = "OU=Users,OU=Class,DC=ad,DC=waad,DC=training"
@@ -306,37 +312,37 @@
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = $($HelpDeskUserCreds.Username)
+        UserName = "HelpDeskUser"
         Password = $DomainHelpDeskUserCreds
         Ensure = "Present"
         Path = "OU=User,OU=Production,DC=ad,DC=waad,DC=training"
-        DependsOn = "[xADOrganizationalUnit]ProductionUsersOU"
+        DependsOn = "[xADOrganizationalUnit]ProductionStaffOU"
     }
     xADUser AccountingUser
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = $($AccountingUserCreds.Username)
+        UserName = "AccountingUser"
         Password = $DomainAccountingUserCreds
         Ensure = "Present"
         Path = "OU=User,OU=Production,DC=ad,DC=waad,DC=training"
-        DependsOn = "[xADOrganizationalUnit]ProductionUsersOU"
+        DependsOn = "[xADOrganizationalUnit]ProductionStaffOU"
     }
     xADUser ServerAdmin
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = $($ServerAdminCreds.Username)
+        UserName = "ServerAdmin"
         Password = $DomainServerAdminCreds
         Ensure = "Present"
         Path = "OU=User,OU=Production,DC=ad,DC=waad,DC=training"
-        DependsOn = "[xADOrganizationalUnit]ProductionUsersOU"
+        DependsOn = "[xADOrganizationalUnit]ProductionStaffOU"
     }  
-    xADUser BackupExecUser
+    xADUser BackupUser
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = $($BackupUserCreds.Username)
+        UserName = "BackupUser"
         Password = $DomainBackupUserCreds
         Ensure = "Present"
         Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
@@ -368,8 +374,8 @@
     {
       GroupName = "Domain Admins"
       Ensure = 'Present'
-      MembersToInclude = $($BackupUserCreds.Username), $($ServerAdminCreds.Username)
-      DependsOn = "[xADUser]BackupExecUser", "[xADUser]ServerAdmin"
+      MembersToInclude = $BackupUserUsername, $ServerAdminUsername
+      DependsOn = "[xADUser]BackupUser", "[xADUser]ServerAdmin"
     }
     xADGroup AccountingUsers
     {
@@ -378,7 +384,7 @@
       Category = "Security"
       Description = "Conjurers of Arithmetic and Paperwork"
       Ensure = 'Present'
-      MembersToInclude = $($AccountingUserCreds.Username)
+      MembersToInclude = $AccountingUserUsername
       Path = "OU=Groups,OU=Production,DC=ad,DC=waad,DC=training"
       DependsOn = "[xADOrganizationalUnit]ProductionGroupsOU", "[xADUser]AccountingUser"
     }
@@ -389,7 +395,7 @@
       Category = "Security"
       Description = "The valiant frontline of IT Support"
       Ensure = 'Present'
-      MembersToInclude = $($HelpDeskUserCreds.Username)
+      MembersToInclude = $HelpDeskUserUsername
       Path = "OU=Groups,OU=Production,DC=ad,DC=waad,DC=training"
       DependsOn = "[xADOrganizationalUnit]ProductionGroupsOU", "[xADUser]HelpdeskUser"
     }

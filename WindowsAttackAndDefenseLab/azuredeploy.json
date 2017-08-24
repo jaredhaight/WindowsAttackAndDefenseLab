@@ -2,20 +2,13 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "artifactsLocation": {
-      "type": "string"
-    },
-    "_artifactsLocationSasToken": {
-      "type": "securestring",
-      "metadata": {
-        "description": "Auto-generated token to access artifactsLocation"
-      },
-      "defaultValue": ""
-    },
     "subscriptionId": {
       "type": "string"
     },
     "masterResourceGroup": {
+      "type": "string"
+    },
+    "studentCode": {
       "type": "string"
     },
     "studentSubnetName": {
@@ -36,16 +29,28 @@
     "studentPassword": {
       "type": "securestring"
     },
-    "backupExecPassword": {
+    "BackupUserName": {
+      "type": "string"
+    },
+    "BackupUserPassword": {
       "type": "securestring"
     },
-    "peterParkerPassword": {
+    "HelpDeskUserName": {
+      "type": "string"
+    },
+    "HelpDeskUserPassword": {
       "type": "securestring"
     },
-    "pepperPottsPassword": {
+    "AccountingUserName": {
+      "type": "string"
+    },
+    "AccountingUserPassword": {
       "type": "securestring"
     },
-    "tonyStarkPassword": {
+    "ServerAdminUsername": {
+      "type": "string"
+    },
+    "ServerAdminPassword": {
       "type": "securestring"
     },
     "storageAccountName": {
@@ -91,6 +96,9 @@
       "type": "string"
     },
     "windowsImageSku": {
+      "type": "string"
+    },
+    "domainControllerImageSku": {
       "type": "string"
     },
     "terminalServerVMName": {
@@ -239,7 +247,7 @@
           "imageReference": {
             "publisher": "[parameters('windowsImagePublisher')]",
             "offer": "[parameters('windowsImageOffer')]",
-            "sku": "[parameters('windowsImageSku')]",
+            "sku": "[parameters('domainControllerImageSku')]",
             "version": "latest"
           },
           "osDisk": {
@@ -286,7 +294,7 @@
             "typeHandlerVersion": "2.19",
             "autoUpgradeMinorVersion": true,
             "settings": {
-              "ModulesUrl": "[concat(parameters('artifactsLocation'), '/DSC/DomainConfig.zip', parameters('_artifactsLocationSasToken'))]",
+              "ModulesUrl": "[concat(parameters('filesUrl'), 'DomainConfig.zip')]",
               "ConfigurationFunction": "DomainConfig.ps1\\DomainConfig",
               "Properties": {
                 "DomainName": "[parameters('domainName')]",
@@ -298,21 +306,21 @@
                   "UserName": "[parameters('studentAdminusername')]",
                   "Password": "PrivateSettingsRef:StudentPassword"
                 },
-                "BackupExecCreds": {
-                  "UserName": "BackupExec",
-                  "Password": "PrivateSettingsRef:BackupExecPassword"
+                "BackupUserCreds": {
+                  "UserName": "[parameters('BackupUserName')]",
+                  "Password": "PrivateSettingsRef:BackupUserPassword"
                 },
-                "PeterParkerCreds": {
-                  "UserName": "PeterParker",
-                  "Password": "PrivateSettingsRef:PeterParkerPassword"
+                "HelpDeskUserCreds": {
+                  "UserName": "[parameters('HelpDeskUserName')]",
+                  "Password": "PrivateSettingsRef:HelpDeskUserPassword"
                 },
-                "PepperPottsCreds": {
-                  "UserName": "PepperPotts",
-                  "Password": "PrivateSettingsRef:PepperPottsPassword"
+                "AccountingUserCreds": {
+                  "UserName": "[parameters('AccountingUserName')]",
+                  "Password": "PrivateSettingsRef:AccountingUserPassword"
                 },
-                "TonyStarkCreds": {
-                  "UserName": "TonyStark",
-                  "Password": "PrivateSettingsRef:TonyStarkPassword"
+                "ServerAdminCreds": {
+                  "UserName": "[parameters('ServerAdminUserName')]",
+                  "Password": "PrivateSettingsRef:ServerAdminPassword"
                 },
                 "filesUrl": "[parameters('filesUrl')]",
                 "linuxNicIpAddress": "[parameters('linuxNicIpAddress')]"
@@ -321,10 +329,10 @@
             "protectedSettings": {
               "Items": {
                 "StudentPassword": "[parameters('studentPassword')]",
-                "BackupExecPassword": "[parameters('backupExecPassword')]",
-                "PeterParkerPassword": "[parameters('peterParkerPassword')]",
-                "PepperPottsPassword": "[parameters('PepperPottsPassword')]",
-                "TonyStarkPassword": "[parameters('TonyStarkPassword')]"
+                "BackupUserPassword": "[parameters('BackupUserPassword')]",
+                "HelpDeskUserPassword": "[parameters('HelpDeskUserPassword')]",
+                "AccountingUserPassword": "[parameters('AccountingUserPassword')]",
+                "ServerAdminPassword": "[parameters('ServerAdminPassword')]"
               }
             }
           }
@@ -440,7 +448,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "fileUris": [
-            "https://eviltraining.blob.core.windows.net/files/linux-bootstrap.sh"
+            "[concat(parameters('filesUrl'),'linux-bootstrap.sh')]"
           ],
           "commandToExecute": "bash linux-bootstrap.sh"
         }
@@ -457,7 +465,7 @@
       "properties": {
         "publicIPAllocationMethod": "Dynamic",
         "dnsSettings": {
-          "domainNameLabel": "[parameters('homeVmName')]"
+          "domainNameLabel": "[parameters('StudentCode')]"
         }
       },
       "tags": {
@@ -601,7 +609,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "wmfVersion": "5.0",
-          "modulesUrl": "[concat(parameters('artifactsLocation'), '/DSC/HomeConfig.zip', parameters('_artifactsLocationSasToken'))]",
+          "modulesUrl": "[concat(parameters('filesUrl'), 'HomeConfig.zip')]",
           "configurationFunction": "HomeConfig.ps1\\HomeConfig",
           "Properties": {
             "DomainName": "[parameters('domainName')]",
@@ -755,7 +763,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "wmfVersion": "5.0",
-          "modulesUrl": "[concat(parameters('artifactsLocation'), '/DSC/terminalServerConfig.zip', parameters('_artifactsLocationSasToken'))]",
+          "modulesUrl": "[concat(parameters('filesUrl'), 'terminalServerConfig.zip')]",
           "configurationFunction": "terminalServerConfig.ps1\\terminalServerConfig",
           "Properties": {
             "DomainName": "[parameters('domainName')]",
@@ -908,19 +916,24 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "wmfVersion": "5.0",
-          "modulesUrl": "[concat(parameters('artifactsLocation'), '/DSC/userDesktopConfig.zip', parameters('_artifactsLocationSasToken'))]",
+          "modulesUrl": "[concat(parameters('filesUrl'), 'userDesktopConfig.zip')]",
           "configurationFunction": "userDesktopConfig.ps1\\userDesktopConfig",
           "Properties": {
             "DomainName": "[parameters('domainName')]",
             "AdminCreds": {
               "UserName": "[parameters('adAdminUsername')]",
               "Password": "PrivateSettingsRef:AdminPassword"
+            },
+            "BackupUserCreds": {
+              "UserName": "[parameters('BackupUserName')]",
+              "Password": "PrivateSettingsRef:BackupUserPassword"
             }
           }
         },
         "protectedSettings": {
           "Items": {
-            "AdminPassword": "[parameters('studentPassword')]"
+            "AdminPassword": "[parameters('studentPassword')]",
+            "BackupUserPassword": "[parameters('BackupUserPassword')]"
           }
         }
       },

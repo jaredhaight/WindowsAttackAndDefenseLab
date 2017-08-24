@@ -31,6 +31,14 @@
         Credential = $DomainCreds    
         PsDscRunAsCredential = $DomainCreds
     }
+    Group AddHelpDesktoAdmins
+    {
+        GroupName='Administrators'   
+        Ensure= 'Present'             
+        MembersToInclude= "$DomainName\Helpdesk Users"
+        Credential = $DomainCreds    
+        PsDscRunAsCredential = $DomainCreds
+    }
     Script UpdateHelp
     {
         SetScript =  { 

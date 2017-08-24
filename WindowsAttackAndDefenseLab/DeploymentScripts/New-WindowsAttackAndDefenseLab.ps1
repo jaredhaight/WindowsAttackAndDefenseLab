@@ -1,5 +1,4 @@
 workflow New-WindowsAttackAndDefenseLab {
-
   [CmdletBinding()]
   Param( 
     [Parameter(Mandatory=$True,Position=1)]
@@ -20,12 +19,11 @@ workflow New-WindowsAttackAndDefenseLab {
        $region = 'westus2'
      }
      Write-Output "Sending $studentCode to $region"
-     Invoke-CreateWindowsAttackAndDefenseLab -credentials $credentials -studentCode $studentCode -studentPassword $studentPassword -region $region -place $studentNumber -total $studentData.count 
+     Invoke-CreateWindowsAttackAndDefenseLab -credentials $credentials -studentCode $studentCode -studentPassword $studentPassword -region $region -place $studentNumber -total $studentData.count
    }
 }
 
 function Invoke-CreateWindowsAttackAndDefenseLab {
-  
   [CmdletBinding()]
   Param(
     [Parameter(Mandatory=$True)]
@@ -36,7 +34,6 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     
     [Parameter(Mandatory=$True)]
     [string]$StudentPassword,
-
     [string]$Region="eastus2",
     [int]$place=1,
     [int]$total=1,
@@ -45,8 +42,8 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
 
   # Import Azure Service Management module
   Import-Module AzureRM
-  
-  Write-Output "$place/$total - Starting deployment for $studentCode"  
+
+  Write-Progress -Activity "Deploying." -Status "[$place/$total] Deployment for $studentCode running.."  
 
   # Check if logged in to Azure
   Try {
@@ -55,12 +52,9 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   Catch {
     Add-AzureRmAccount -Credential $credentials
   }
-
-
   
   # Common Variables
   $location = $region
-  $locationName = "East US"
   $masterResourceGroup = "waad.training-master"
   $dnsZone = "waad.training"
   $resourceGroupName = $studentCode + '.' + $dnsZone
@@ -71,14 +65,15 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   $localAdminUsername = "localadmin"
   $studentAdminUsername = "studentadmin"
   $storageAccountName = $studentCode + "storage"    # Lowercase required
-  $TemplateFile = './azuredeploy.json'
-  $artifactsLocation = "https://raw.githubusercontent.com/jaredhaight/WindowsAttackAndDefenseLab/master/WindowsAttackAndDefenseLab/"
+  $TemplateFile = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PSScriptRoot,'..\azuredeploy.json'))
+  $TemplateParameterFile = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PSScriptRoot, '..\azuredeploy.parameters.json'))
   $networkSecurityGroup = "waad.training-nsg-" + $region
   $subscriptionId = (Get-AzureRmContext).Subscription.SubscriptionId
   $windowsImagePublisher = "MicrosoftWindowsServer"
   $windowsImageOffer = "WindowsServer"
-  $windowsImageSku = "2016-Datacenter"
+  $windowsImageSku = "2016-Datacenter"  
   $filesUrl = "https://waadtraining.blob.core.windows.net/files/"
+
 
   # DC Variables
   $adAdminUserName = "WaadAdmin"
@@ -86,28 +81,29 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   $adVMName = "dc01"
   $adNicIPAddress = "10.0.0.4"
   $adVmSize = "Standard_A1_v2"
+  $domainControllerImageSku = "2012-R2-Datacenter"
 
   # Home Vars
-  $homeVMName = "Home"
+  $homeVMName = "home" # Has to be lowercase
   $homeNicIpAddress = "10.0.0.10"
   $homeVMSize = "Standard_A2_v2"
   $homeOU = "OU=Computers,OU=Class,DC=ad,DC=waad,DC=training"
 
   # Terminal Server Vars
-  $terminalServerVMName = "TerminalServer"
+  $terminalServerVMName = "terminalserver" # Has to be lowercase
   $terminalServerNicIpAddress = "10.0.0.11"
   $terminalServerVMSize = "Standard_A1_v2"
   $terminalServerOU = "OU=Servers,OU=Production,DC=ad,DC=waad,DC=training"
 
   # User Desktop Vars
-  $userDesktopVMName = "Desktop"
-  $userDesktopNicIpAddress = "10.0.0.11"
+  $userDesktopVMName = "userdesktop" # Has to be lowercase
+  $userDesktopNicIpAddress = "10.0.0.12"
   $userDesktopVMSize = "Standard_A1_v2"
   $userDesktopOU = "OU=Computers,OU=Production,DC=ad,DC=waad,DC=training"
 
   # Linux Vars
-  $linuxVMName = $studentCode + "-lnx"
-  $linuxNicIpAddress = "10.0.0.12"
+  $linuxVMName = "pwnbox" # Has to be lowercase
+  $linuxNicIpAddress = "10.0.0.101"
   $linuxVMSize = "Standard_A1_v2"
   $linuxImagePublisher = "Canonical"
   $linuxImageOffer = "UbuntuServer"
@@ -121,9 +117,11 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     New-AzureRmResourceGroup -Name $resourceGroupName -Location $location
   }
 
+  $TemplateFileParams = (Get-Content $TemplateParameterFile) -Join "`n" | ConvertFrom-Json
+
   # Parameters for the template and configuration
-  $MyParams = @{
-    artifactsLocation = $artifactsLocation
+  $DeploymentParameters = @{
+    StudentCode = $StudentCode
     studentSubnetName = $studentSubnetName
     virtualNetworkName = $virtualNetworkName
     virtualNetworkAddressRange = $virtualNetworkAddressRange
@@ -138,13 +136,13 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     windowsImagePublisher = $windowsImagePublisher
     windowsImageOffer = $windowsImageOffer
     windowsImageSku = $windowsImageSku
-    BackupExecPassword = $BackupExecPassword
     adAdminUsername = $adAdminUserName
     domainName = $domainName
 	  filesUrl = $filesUrl
     adVMName = $adVMName
     adNicIpAddress = $adNicIPaddress
     adVMSize = $adVMSize
+    domainControllerImageSku = $domainControllerImageSku
     homeVMName = $homeVMName
     homeNicIpAddress = $homeNicIPaddress
     homeVMSize = $homeVMSize
@@ -163,30 +161,34 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     linuxImagePublisher = $linuxImagePublisher
     linuxImageOffer = $linuxImageOffer
     linuxImageSku = $linuxImageSku
+    BackupUserName = $TemplateFileParams.Parameters.BackupUsername.value
+    BackupUserPassword = $TemplateFileParams.Parameters.BackupUserPassword.value
+    AccountingUserName = $TemplateFileParams.Parameters.AccountingUserName.value
+    AccountingUserPassword = $TemplateFileParams.Parameters.AccountingUserPassword.value
+    HelpDeskUserName = $TemplateFileParams.Parameters.HelpDeskUserName.value
+    HelpDeskUserPassword = $TemplateFileParams.Parameters.HelpDeskUserPassword.value
+    ServerAdminUsername = $TemplateFileParams.Parameters.ServerAdminUsername.value
+    ServerAdminPassword = $TemplateFileParams.Parameters.ServerAdminPassword.value
   }
-
-
 
   if ($Test) {
     $SplatParams = @{
       TemplateFile = $TemplateFile
-      TemplateParameterFile = $TemplateParamaterFile
       ResourceGroupName = $resourceGroupName 
-      TemplateParameterObject = $MyParams
+      TemplateParameterObject = $DeploymentParameters
     }
     Test-AzureRmResourceGroupDeployment @SplatParams -Verbose
   }
   else {
     # Splat the parameters on New-AzureRmResourceGroupDeployment  
     $SplatParams = @{
-      TemplateUri = $TemplateFile 
-      TemplateParameterFile = $TemplateParamaterFile
+      TemplateFile = $TemplateFile 
       ResourceGroupName = $resourceGroupName 
-      TemplateParameterObject = $MyParams
+      TemplateParameterObject = $DeploymentParameters
       Name = $studentCode + "-template"
     }
     try {
-      New-AzureRmResourceGroupDeployment -Verbose -ErrorAction Stop @SplatParams 
+      New-AzureRmResourceGroupDeployment -Verbose -ErrorAction Stop @SplatParams
       $deployed = $true
     }
     catch {
