@@ -81,7 +81,7 @@ configuration HomeConfig
     Script DownloadClassFiles
     {
         SetScript =  { 
-            $file = $using:filesUrl + 'class.zip'
+            $file = $using:filesUrl + 'Class.zip'
             Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadClassFiles] Downloading $file"
             Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\Class.zip
         }
@@ -97,15 +97,6 @@ configuration HomeConfig
         Path = "C:\Windows\Temp\Class.zip"
         Force = $true
         DependsOn = "[Script]DownloadClassFiles"
-    }
-    Script UpdateHelp
-    {
-        SetScript =  { 
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[UpdateHelp] Running.."
-            Update-Help -Force
-        }
-        GetScript =  { @{} }
-        TestScript = { $false }
     }
     LocalConfigurationManager 
     {

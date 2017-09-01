@@ -1,3 +1,4 @@
+configuration TerminalServerConfig
 {
    param 
    ( 
@@ -8,7 +9,7 @@
     )
   
   Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[Start] Got FileURL: $filesUrl"
-  Import-DscResource -ModuleName xSmbShare,PSDesiredStateConfiguration
+  Import-DscResource -ModuleName PSDesiredStateConfiguration
   [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
   
   Node localhost 
@@ -38,15 +39,6 @@
         MembersToInclude= "$DomainName\Helpdesk Users"
         Credential = $DomainCreds    
         PsDscRunAsCredential = $DomainCreds
-    }
-    Script UpdateHelp
-    {
-        SetScript =  { 
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[UpdateHelp] Running.."
-            Update-Help -Force
-        }
-        GetScript =  { @{} }
-        TestScript = { $false }
     }
     LocalConfigurationManager 
     {

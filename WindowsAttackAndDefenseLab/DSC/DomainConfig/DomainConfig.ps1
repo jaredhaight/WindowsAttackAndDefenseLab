@@ -87,11 +87,8 @@
           Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[ImportGPOs] Running.." 
           Try {
             New-GPO -Name "Class Default"
-            New-GPO -Name "Server Permissions"
-            Import-GPO -Path "C:\Bootstrap" -BackupId '{E3488702-D836-4F95-9E50-AD2844B0864C}' -TargetName "Server Permissions"
-            Import-GPO -Path "C:\Bootstrap" -BackupId '{43D456E8-BED3-46F3-BD64-BF0A97913E36}' -TargetName "Class Default"
+            Import-GPO -Path "C:\Bootstrap" -BackupId '{CC5B8698-C56C-4B4C-B2A2-745A551E37E7}' -TargetName "Class Default"
             New-GPLink -Name "Class Default" -Target "DC=AD,DC=WAAD,DC=TRAINING"
-            New-GPLink -Name "Server Permissions" -Target "OU=SERVERS,OU=PRODUCTION,DC=AD,DC=WAAD,DC=TRAINING"
           }
           Catch {
             Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[ImportGPOs] Failed.."
@@ -312,37 +309,37 @@
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = "HelpDeskUser"
+        UserName = $HelpDeskUserUsername
         Password = $DomainHelpDeskUserCreds
         Ensure = "Present"
-        Path = "OU=User,OU=Production,DC=ad,DC=waad,DC=training"
+        Path = "OU=Staff,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionStaffOU"
     }
     xADUser AccountingUser
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = "AccountingUser"
+        UserName = $AccountingUserUsername
         Password = $DomainAccountingUserCreds
         Ensure = "Present"
-        Path = "OU=User,OU=Production,DC=ad,DC=waad,DC=training"
+        Path = "OU=Staff,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionStaffOU"
     }
     xADUser ServerAdmin
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = "ServerAdmin"
+        UserName = $ServerAdminUsername
         Password = $DomainServerAdminCreds
         Ensure = "Present"
-        Path = "OU=User,OU=Production,DC=ad,DC=waad,DC=training"
+        Path = "OU=Staff,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionStaffOU"
     }  
     xADUser BackupUser
     {
         DomainName = $DomainName
         DomainAdministratorCredential = $DomainAdminCreds
-        UserName = "BackupUser"
+        UserName = $BackupUserUsername
         Password = $DomainBackupUserCreds
         Ensure = "Present"
         Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"

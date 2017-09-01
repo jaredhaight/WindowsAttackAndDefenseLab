@@ -125,6 +125,18 @@
     "userDesktopOU": {
       "type": "string"
     },
+    "adminDesktopVMName": {
+      "type": "string"
+    },
+    "adminDesktopNicIpAddress": {
+      "type": "string"
+    },
+    "adminDesktopVmSize": {
+      "type": "string"
+    },
+    "adminDesktopOU": {
+      "type": "string"
+    },
     "linuxVMName": {
       "type": "string"
     },
@@ -155,6 +167,7 @@
     "homeNicName": "[concat(parameters('homeVmName'),'-nic')]",
     "terminalServerNicName": "[concat(parameters('terminalServerVmName'),'-nic')]",
     "userDesktopNicName": "[concat(parameters('userDesktopVmName'),'-nic')]",
+    "adminDesktopNicName": "[concat(parameters('adminDesktopVmName'),'-nic')]",
     "domainJoinOptions": "3"
   },
   "resources": [
@@ -763,8 +776,8 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "wmfVersion": "5.0",
-          "modulesUrl": "[concat(parameters('filesUrl'), 'terminalServerConfig.zip')]",
-          "configurationFunction": "terminalServerConfig.ps1\\terminalServerConfig",
+          "modulesUrl": "[concat(parameters('filesUrl'), 'TerminalServerConfig.zip')]",
+          "configurationFunction": "TerminalServerConfig.ps1\\TerminalServerConfig",
           "Properties": {
             "DomainName": "[parameters('domainName')]",
             "AdminCreds": {
@@ -916,7 +929,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "wmfVersion": "5.0",
-          "modulesUrl": "[concat(parameters('filesUrl'), 'userDesktopConfig.zip')]",
+          "modulesUrl": "[concat(parameters('filesUrl'), 'UserDesktopConfig.zip')]",
           "configurationFunction": "userDesktopConfig.ps1\\userDesktopConfig",
           "Properties": {
             "DomainName": "[parameters('domainName')]",
@@ -927,7 +940,8 @@
             "BackupUserCreds": {
               "UserName": "[parameters('BackupUserName')]",
               "Password": "PrivateSettingsRef:BackupUserPassword"
-            }
+            },
+            "filesUrl": "[parameters('filesUrl')]"
           }
         },
         "protectedSettings": {
@@ -939,6 +953,148 @@
       },
       "tags": {
         "displayName": "userDesktopDsc"
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('adminDesktopNicName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[parameters('adminDesktopNicIpAddress')]",
+              "subnet": {
+                "id": "[variables('subnetId')]"
+              }
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": [
+            "[parameters('adNicIpAddress')]"
+          ]
+        }
+      },
+      "tags": {
+        "displayName": "adminDesktopNic"
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('adminDesktopVmName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('adminDesktopNicName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('adminDesktopVmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('adminDesktopVmName')]",
+          "adminUsername": "[parameters('localAdminUsername')]",
+          "adminPassword": "[parameters('studentPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[parameters('windowsImagePublisher')]",
+            "offer": "[parameters('windowsImageOffer')]",
+            "sku": "[parameters('windowsImageSku')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('adminDesktopVmName'), 'disk0.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          },
+          "dataDisks": [
+            {
+              "name": "data-disk1",
+              "vhd": {
+                "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('adminDesktopVmName'), 'disk1.vhd')]"
+              },
+              "caching": "None",
+              "createOption": "Empty",
+              "diskSizeGB": "1000",
+              "lun": 0
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('adminDesktopNicName'))]"
+            }
+          ]
+        }
+      },
+      "tags": {
+        "displayName": "adminDesktopVm"
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('adminDesktopVmName'),'/joindomain')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('adminDesktopVmName'))]",
+        "[resourceId(parameters('subscriptionId'), resourceGroup().name,'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "JsonADDomainExtension",
+        "typeHandlerVersion": "1.3",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "Name": "[parameters('domainName')]",
+          "OUPath": "[parameters('adminDesktopOu')]",
+          "User": "[concat(parameters('domainName'), '\\', parameters('adAdminUserName'))]",
+          "Restart": "true",
+          "Options": "[variables('domainJoinOptions')]"
+        },
+        "protectedsettings": {
+          "Password": "[parameters('studentPassword')]"
+        }
+      },
+      "tags": {
+        "displayName": "adminDesktopDomainJoin"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('adminDesktopVmName'),'/dscServerConfig')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('adminDesktopVmName'),'joinDomain')]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.19",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "wmfVersion": "5.0",
+          "modulesUrl": "[concat(parameters('filesUrl'), 'AdminDesktopConfig.zip')]",
+          "configurationFunction": "adminDesktopConfig.ps1\\AdminDesktopConfig",
+          "Properties": {}
+        }
+      },
+      "tags": {
+        "displayName": "adminDesktopDsc"
       }
     }
   ]

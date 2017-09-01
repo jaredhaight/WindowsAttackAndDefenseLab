@@ -101,6 +101,12 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   $userDesktopVMSize = "Standard_A1_v2"
   $userDesktopOU = "OU=Computers,OU=Production,DC=ad,DC=waad,DC=training"
 
+  # Admin Desktop Vars
+  $adminDesktopVMName = "admindesktop" # Has to be lowercase
+  $adminDesktopNicIpAddress = "10.0.0.13"
+  $adminDesktopVMSize = "Standard_A1_v2"
+  $adminDesktopOU = "OU=Computers,OU=Production,DC=ad,DC=waad,DC=training"
+
   # Linux Vars
   $linuxVMName = "pwnbox" # Has to be lowercase
   $linuxNicIpAddress = "10.0.0.101"
@@ -155,6 +161,10 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     userDesktopNicIpAddress = $userDesktopNicIPaddress
     userDesktopVMSize = $userDesktopVMSize
     userDesktopOU = $userDesktopOU
+    adminDesktopVMName = $adminDesktopVMName
+    adminDesktopNicIpAddress = $adminDesktopNicIPaddress
+    adminDesktopVMSize = $adminDesktopVMSize
+    adminDesktopOU = $adminDesktopOU
     linuxVMName = $linuxVMName
     linuxNicIpAddress = $linuxNicIPaddress
     linuxVMSize = $linuxVMSize

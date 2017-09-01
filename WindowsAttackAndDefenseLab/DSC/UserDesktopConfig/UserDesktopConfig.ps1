@@ -1,3 +1,4 @@
+configuration UserDesktopConfig 
 {
    param 
    ( 
@@ -6,7 +7,9 @@
         [Parameter(Mandatory)]
         [System.Management.Automation.PSCredential]$Admincreds,
         [Parameter(Mandatory)]
-        [System.Management.Automation.PSCredential]$BackupUserCreds
+        [System.Management.Automation.PSCredential]$BackupUserCreds,
+        [Parameter(Mandatory)]
+        [String]$filesUrl
     )
   
   Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[Start] Got FileURL: $filesUrl"
@@ -52,7 +55,7 @@
         ScheduleType = 'AtStartup'
         ExecuteAsCredential = $DomainBackupUserCreds
         RepeatInterval = [datetime]::Today.AddMinutes(15)
-        RepetitionDuration = [datetime]::Today.AddHours(8)
+        RepetitionDuration = [datetime]::Today.AddHours(23)
         DependsOn = "[File]CopyBackupExe"
     }
     Group AddRDPAccessGroup
@@ -63,30 +66,13 @@
         Credential = $DomainCreds    
         PsDscRunAsCredential = $DomainCreds
     }
-    Group AddHelpDeskToAdmins
+    Group AddToAdmins
     {
         GroupName='Administrators'   
         Ensure= 'Present'             
-        MembersToInclude= "$DomainName\Helpdesk Users"
+        MembersToInclude= "$DomainName\Helpdesk Users", "$DomainName\Accounting Users"
         Credential = $DomainCreds    
         PsDscRunAsCredential = $DomainCreds
-    }
-    Group AddAccountingToAdmins
-    {
-        GroupName='Administrators'   
-        Ensure= 'Present'             
-        MembersToInclude= "$DomainName\Accounting Users"
-        Credential = $DomainCreds    
-        PsDscRunAsCredential = $DomainCreds
-    }
-    Script UpdateHelp
-    {
-        SetScript =  { 
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[UpdateHelp] Running.."
-            Update-Help -Force
-        }
-        GetScript =  { @{} }
-        TestScript = { $false }
     }
     LocalConfigurationManager 
     {
