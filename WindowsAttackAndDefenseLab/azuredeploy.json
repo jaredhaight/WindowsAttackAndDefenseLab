@@ -155,7 +155,10 @@
     "linuxImageSku": {
       "type": "string"
     },
-    "filesUrl": {
+    "dscUrl": {
+      "type": "string"
+    },
+    "classUrl": {
       "type": "string"
     }
   },
@@ -307,7 +310,7 @@
             "typeHandlerVersion": "2.19",
             "autoUpgradeMinorVersion": true,
             "settings": {
-              "ModulesUrl": "[concat(parameters('filesUrl'), 'DomainConfig.zip')]",
+              "ModulesUrl": "[concat(parameters('dscUrl'), 'DomainConfig.zip')]",
               "ConfigurationFunction": "DomainConfig.ps1\\DomainConfig",
               "Properties": {
                 "DomainName": "[parameters('domainName')]",
@@ -335,7 +338,7 @@
                   "UserName": "[parameters('ServerAdminUserName')]",
                   "Password": "PrivateSettingsRef:ServerAdminPassword"
                 },
-                "filesUrl": "[parameters('filesUrl')]",
+                "classUrl": "[parameters('classUrl')]",
                 "linuxNicIpAddress": "[parameters('linuxNicIpAddress')]"
               }
             },
@@ -461,7 +464,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "fileUris": [
-            "[concat(parameters('filesUrl'),'linux-bootstrap.sh')]"
+            "[concat(parameters('dscUrl'),'linux-bootstrap.sh')]"
           ],
           "commandToExecute": "bash linux-bootstrap.sh"
         }
@@ -622,7 +625,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "wmfVersion": "5.0",
-          "modulesUrl": "[concat(parameters('filesUrl'), 'HomeConfig.zip')]",
+          "modulesUrl": "[concat(parameters('dscUrl'), 'HomeConfig.zip')]",
           "configurationFunction": "HomeConfig.ps1\\HomeConfig",
           "Properties": {
             "DomainName": "[parameters('domainName')]",
@@ -630,7 +633,7 @@
               "UserName": "[parameters('adAdminUsername')]",
               "Password": "PrivateSettingsRef:AdminPassword"
             },
-            "filesUrl": "[parameters('filesUrl')]"
+            "classUrl": "[parameters('classUrl')]"
           }
         },
         "protectedSettings": {
@@ -776,7 +779,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "wmfVersion": "5.0",
-          "modulesUrl": "[concat(parameters('filesUrl'), 'TerminalServerConfig.zip')]",
+          "modulesUrl": "[concat(parameters('dscUrl'), 'TerminalServerConfig.zip')]",
           "configurationFunction": "TerminalServerConfig.ps1\\TerminalServerConfig",
           "Properties": {
             "DomainName": "[parameters('domainName')]",
@@ -929,7 +932,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "wmfVersion": "5.0",
-          "modulesUrl": "[concat(parameters('filesUrl'), 'UserDesktopConfig.zip')]",
+          "modulesUrl": "[concat(parameters('dscUrl'), 'UserDesktopConfig.zip')]",
           "configurationFunction": "userDesktopConfig.ps1\\userDesktopConfig",
           "Properties": {
             "DomainName": "[parameters('domainName')]",
@@ -941,7 +944,7 @@
               "UserName": "[parameters('BackupUserName')]",
               "Password": "PrivateSettingsRef:BackupUserPassword"
             },
-            "filesUrl": "[parameters('filesUrl')]"
+            "classUrl": "[parameters('classUrl')]"
           }
         },
         "protectedSettings": {
@@ -1088,9 +1091,20 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "wmfVersion": "5.0",
-          "modulesUrl": "[concat(parameters('filesUrl'), 'AdminDesktopConfig.zip')]",
+          "modulesUrl": "[concat(parameters('dscUrl'), 'AdminDesktopConfig.zip')]",
           "configurationFunction": "adminDesktopConfig.ps1\\AdminDesktopConfig",
-          "Properties": {}
+          "Properties": {
+            "DomainName": "[parameters('domainName')]",
+            "AdminCreds": {
+              "UserName": "[parameters('adAdminUsername')]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            }
+          }
+        },
+        "protectedSettings": {
+          "Items": {
+            "AdminPassword": "[parameters('studentPassword')]"
+          }
         }
       },
       "tags": {

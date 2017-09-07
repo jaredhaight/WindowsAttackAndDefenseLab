@@ -3,14 +3,14 @@ configuration HomeConfig
    param 
    ( 
         [Parameter(Mandatory)]
-        [String]$filesUrl,
+        [String]$classUrl,
         [Parameter(Mandatory)]
         [String]$DomainName,
         [Parameter(Mandatory)]
         [System.Management.Automation.PSCredential]$Admincreds
     )
   
-  Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[Start] Got FileURL: $filesUrl"
+  Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[Start] Got FileURL: $classUrl"
   [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
   Import-DscResource -ModuleName xSystemSecurity -Name xIEEsc
   Import-DscResource -ModuleName PSDesiredStateConfiguration
@@ -81,7 +81,7 @@ configuration HomeConfig
     Script DownloadClassFiles
     {
         SetScript =  { 
-            $file = $using:filesUrl + 'Class.zip'
+            $file = $using:classUrl + 'Home.zip'
             Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadClassFiles] Downloading $file"
             Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\Class.zip
         }

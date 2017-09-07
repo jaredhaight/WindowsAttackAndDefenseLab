@@ -8,7 +8,6 @@ configuration TerminalServerConfig
         [System.Management.Automation.PSCredential]$Admincreds
     )
   
-  Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[Start] Got FileURL: $filesUrl"
   Import-DscResource -ModuleName PSDesiredStateConfiguration
   [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
   
@@ -24,6 +23,15 @@ configuration TerminalServerConfig
         Ensure = "Present" 
         Name = "RDS-RD-Server"
     }
+    Script InstallxComputerManagament
+    {
+        SetScript = {
+            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+            Install-Module xComputerManagement -Force
+        }
+        GetScript =  { @{} }
+        TestScript = { $false }
+    }
     Group AddRDPAccessGroup
     {
         GroupName='Remote Desktop Users'   
@@ -32,11 +40,11 @@ configuration TerminalServerConfig
         Credential = $DomainCreds    
         PsDscRunAsCredential = $DomainCreds
     }
-    Group AddHelpDesktoAdmins
+    Group AddAdmins
     {
         GroupName='Administrators'   
         Ensure= 'Present'             
-        MembersToInclude= "$DomainName\Helpdesk Users"
+        MembersToInclude= "$DomainName\Helpdesk Users", "$DomainName\LocalAdmins"
         Credential = $DomainCreds    
         PsDscRunAsCredential = $DomainCreds
     }

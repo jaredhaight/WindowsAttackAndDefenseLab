@@ -72,7 +72,8 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   $windowsImagePublisher = "MicrosoftWindowsServer"
   $windowsImageOffer = "WindowsServer"
   $windowsImageSku = "2016-Datacenter"  
-  $filesUrl = "https://waadtraining.blob.core.windows.net/files/"
+  $dscUrl = "https://waadtraining.blob.core.windows.net/bootstraps/"
+  $classUrl = "https://waadtraining.blob.core.windows.net/class/"
 
 
   # DC Variables
@@ -144,7 +145,8 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     windowsImageSku = $windowsImageSku
     adAdminUsername = $adAdminUserName
     domainName = $domainName
-	  filesUrl = $filesUrl
+    dscUrl = $dscUrl
+    classUrl = $classUrl
     adVMName = $adVMName
     adNicIpAddress = $adNicIPaddress
     adVMSize = $adVMSize

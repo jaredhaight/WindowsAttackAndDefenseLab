@@ -24,7 +24,7 @@
   [System.Management.Automation.PSCredential]$ServerAdminCreds,
 
   [Parameter(Mandatory)]
-  [string]$filesUrl,
+  [string]$classUrl,
 
   [Parameter(Mandatory)]
   [string]$linuxNicIpAddress,
@@ -61,34 +61,37 @@
       GetScript =  { @{} }
       TestScript = { $false }
     }
-    Script DownloadBootstrapFiles
+    Script DownloadClassFiles
     {
         SetScript =  { 
-            $file = $using:filesUrl + 'DCBootstrapFiles.zip'
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadBootstrapFiles] Downloading $file"
-            Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\bootstrap.zip
+            $file = $using:classUrl + 'DC.zip'
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadClassFiles] Downloading $file"
+            Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\Class.zip
         }
         GetScript =  { @{} }
         TestScript = { 
-            Test-Path C:\Windows\Temp\bootstrap.zip
+            Test-Path C:\Windows\Temp\Class.zip
          }
     }
-    Archive UnzipBootstrapFiles
+    Archive UnzipClassFiles
     {
         Ensure = "Present"
-        Destination = "C:\Bootstrap"
-        Path = "C:\Windows\Temp\Bootstrap.zip"
+        Destination = "C:\Class"
+        Path = "C:\Windows\Temp\Class.zip"
         Force = $true
-        DependsOn = "[Script]DownloadBootstrapFiles"
+        DependsOn = "[Script]DownloadClassFiles"
     }
     Script ImportGPOs
     {
         SetScript =  {
           Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[ImportGPOs] Running.." 
           Try {
-            New-GPO -Name "Class Default"
-            Import-GPO -Path "C:\Bootstrap" -BackupId '{CC5B8698-C56C-4B4C-B2A2-745A551E37E7}' -TargetName "Class Default"
-            New-GPLink -Name "Class Default" -Target "DC=AD,DC=WAAD,DC=TRAINING"
+            New-GPO -Name "WAAD Default"
+            New-GPO -Name "Student Computers"
+            Import-GPO -Path "C:\Class" -BackupId '{7EE86E9B-58D1-424D-A462-3AEF189923A0}' -TargetName "WAAD Default"
+            Import-GPO -Path "C:\Class" -BackupId '{D8BF6BAB-A17B-4673-8F2C-9EAFDDC5A236}'-TargetName "Student Computers"
+            New-GPLink -Name "WAAD Default" -Target "DC=AD,DC=WAAD,DC=TRAINING"
+            New-GPLink -Name "Student Computers" -Target "OU=Computers,OU=Class,DC=AD,DC=WAAD,DC=TRAINING"
           }
           Catch {
             Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[ImportGPOs] Failed.."
@@ -98,13 +101,13 @@
         }
         GetScript =  { @{} }
         TestScript = { $false }
-        DependsOn = "[Archive]UnzipBootstrapFiles","[xADOrganizationalUnit]ProductionServersOU"
+        DependsOn = "[Archive]UnzipClassFiles","[xADOrganizationalUnit]ProductionServersOU","[xADOrganizationalUnit]ClassComputersOU"
     }
     Script CreateFillerUsers
     {
         SetScript =  {
             Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[CreateFillerUsers] Running.."
-            $users = Import-Csv C:\Bootstrap\user_data.csv
+            $users = Import-Csv C:\Class\user_data.csv
             $userOus = Get-ADOrganizationalUnit -Filter * -SearchBase "OU=Staff,OU=Production,DC=ad,dc=waad,dc=training"
 
             forEach ($user in $users) {
@@ -137,7 +140,7 @@
         }
         GetScript =  { @{} }
         TestScript = { $false }
-        DependsOn = "[Archive]UnzipBootstrapFiles","[xADOrganizationalUnit]ProductionStaffOU"
+        DependsOn = "[Archive]UnzipClassFiles","[xADOrganizationalUnit]ProductionStaffOU"
     }
     WindowsFeature DNS 
     { 
@@ -352,9 +355,9 @@
       Category = "Security"
       Description = "Group for Local Admins"
       Ensure = 'Present'
-      MembersToInclude = "StudentAdmin"
+      MembersToInclude = $BackupUserUsername
       Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
-      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]StudentAdmin"
+      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser"
     }
     xADGroup ClassRDPAccess
     {
@@ -371,8 +374,8 @@
     {
       GroupName = "Domain Admins"
       Ensure = 'Present'
-      MembersToInclude = $BackupUserUsername, $ServerAdminUsername
-      DependsOn = "[xADUser]BackupUser", "[xADUser]ServerAdmin"
+      MembersToInclude =  $ServerAdminUsername, "StudentAdmin"
+      DependsOn = "[xADUser]ServerAdmin", "[xADUser]StudentAdmin"
     }
     xADGroup AccountingUsers
     {
