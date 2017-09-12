@@ -13,8 +13,8 @@ configuration UserDesktopConfig
     )
   
   Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[Start] Got FileURL: $classUrl"
-  Import-DscResource -ModuleName xSmbShare,PSDesiredStateConfiguration,xComputerManagement
-  [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
+  Import-DscResource -ModuleName xSmbShare,PSDesiredStateConfiguration,xComputerManagement,xTimeZone
+  [System.Management.Automation.PSCredential]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
   [System.Management.Automation.PSCredential]$DomainBackupUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($BackupUserCreds.UserName)", $BackupUserCreds.Password)
 
   Node localhost 
@@ -31,6 +31,14 @@ configuration UserDesktopConfig
             Test-Path C:\Windows\Temp\Class.zip
          }
     }
+    Archive UnzipClassFiles
+    {
+        Ensure = "Present"
+        Destination = "C:\Class"
+        Path = "C:\Windows\Temp\Class.zip"
+        Force = $true
+        DependsOn = "[Script]DownloadClassFiles"
+    }
     Script InstallxComputerManagament
     {
         SetScript = {
@@ -39,14 +47,6 @@ configuration UserDesktopConfig
         }
         GetScript =  { @{} }
         TestScript = { $false }
-    }
-    Archive UnzipClassFiles
-    {
-        Ensure = "Present"
-        Destination = "C:\Class"
-        Path = "C:\Windows\Temp\Class.zip"
-        Force = $true
-        DependsOn = "[Script]DownloadClassFiles"
     }
     Group AddRDPAccessGroup
     {
@@ -63,6 +63,11 @@ configuration UserDesktopConfig
         MembersToInclude= "$DomainName\Helpdesk Users", "$DomainName\Accounting Users", "$DomainName\LocalAdmins"
         Credential = $DomainCreds    
         PsDscRunAsCredential = $DomainCreds
+    }
+    xTimeZone SetTimezone
+    {
+        IsSingleInstance = 'Yes'
+        TimeZone         = 'Pacific Standard Time'
     }
     LocalConfigurationManager 
     {

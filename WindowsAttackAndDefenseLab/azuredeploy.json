@@ -74,6 +74,9 @@
     "adVmSize": {
       "type": "string"
     },
+    "adDscFile":{
+      "type": "string"
+    },
     "homeVmName": {
       "type": "string"
     },
@@ -311,7 +314,7 @@
             "autoUpgradeMinorVersion": true,
             "settings": {
               "ModulesUrl": "[concat(parameters('dscUrl'), 'DomainConfig.zip')]",
-              "ConfigurationFunction": "DomainConfig.ps1\\DomainConfig",
+              "ConfigurationFunction": "[concat(parameters('adDscFile'), '\\DomainConfig')]",
               "Properties": {
                 "DomainName": "[parameters('domainName')]",
                 "AdminCreds": {
@@ -786,7 +789,8 @@
             "AdminCreds": {
               "UserName": "[parameters('adAdminUsername')]",
               "Password": "PrivateSettingsRef:AdminPassword"
-            }
+            },
+            "classUrl": "[parameters('classUrl')]"
           }
         },
         "protectedSettings": {
@@ -1093,18 +1097,7 @@
           "wmfVersion": "5.0",
           "modulesUrl": "[concat(parameters('dscUrl'), 'AdminDesktopConfig.zip')]",
           "configurationFunction": "adminDesktopConfig.ps1\\AdminDesktopConfig",
-          "Properties": {
-            "DomainName": "[parameters('domainName')]",
-            "AdminCreds": {
-              "UserName": "[parameters('adAdminUsername')]",
-              "Password": "PrivateSettingsRef:AdminPassword"
-            }
-          }
-        },
-        "protectedSettings": {
-          "Items": {
-            "AdminPassword": "[parameters('studentPassword')]"
-          }
+          "Properties": { }
         }
       },
       "tags": {

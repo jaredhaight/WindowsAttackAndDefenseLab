@@ -1,43 +1,46 @@
 workflow New-WindowsAttackAndDefenseLab {
   [CmdletBinding()]
   Param( 
-    [Parameter(Mandatory=$True,Position=1)]
+    [Parameter(Mandatory = $True, Position = 1)]
     [pscredential]$Credential,
 
-    [Parameter(Mandatory=$True,Position=2)]
-    [string]$CsvSource
+    [Parameter(Mandatory = $True, Position = 2)]
+    [string]$CsvSource,
+
+    [string]$Day = "One"
   ) 
 
   $studentData = Import-CSV $csvSource
   foreach -parallel -throttle 20 ($student in $studentData) {
-     $studentPassword = $student.password
-     $studentCode = $student.code.toString()
-     $studentNumber = $student.id
-     $region = 'eastus2'
+    $studentPassword = $student.password
+    $studentCode = $student.code.toString()
+    $studentNumber = $student.id
+    $region = 'eastus2'
      
-     if ($studentNumber % 2 -eq 0) {
-       $region = 'westus2'
-     }
-     Write-Output "Sending $studentCode to $region"
-     Invoke-CreateWindowsAttackAndDefenseLab -credentials $credentials -studentCode $studentCode -studentPassword $studentPassword -region $region -place $studentNumber -total $studentData.count
-   }
+    if ($studentNumber % 2 -eq 0) {
+      $region = 'westus2'
+    }
+    Write-Output "Sending $studentCode to $region"
+    Invoke-CreateWindowsAttackAndDefenseLab -credentials $credentials -studentCode $studentCode -studentPassword $studentPassword -region $region -place $studentNumber -total $studentData.count
+  }
 }
 
 function Invoke-CreateWindowsAttackAndDefenseLab {
   [CmdletBinding()]
   Param(
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     [pscredential]$Credentials,
 
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     [string]$StudentCode,
     
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     [string]$StudentPassword,
-    [string]$Region="eastus2",
-    [int]$place=1,
-    [int]$total=1,
-    [switch]$Test
+    [string]$Region = "eastus2",
+    [int]$place = 1,
+    [int]$total = 1,
+    [switch]$Test,
+    [string]$Day = "One"
   )
 
   # Import Azure Service Management module
@@ -65,7 +68,7 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   $localAdminUsername = "localadmin"
   $studentAdminUsername = "studentadmin"
   $storageAccountName = $studentCode + "storage"    # Lowercase required
-  $TemplateFile = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PSScriptRoot,'..\azuredeploy.json'))
+  $TemplateFile = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PSScriptRoot, '..\azuredeploy.json'))
   $TemplateParameterFile = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PSScriptRoot, '..\azuredeploy.parameters.json'))
   $networkSecurityGroup = "waad.training-nsg-" + $region
   $subscriptionId = (Get-AzureRmContext).Subscription.SubscriptionId
@@ -82,6 +85,15 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   $adVMName = "dc01"
   $adNicIPAddress = "10.0.0.4"
   $adVmSize = "Standard_A1_v2"
+  if ($Day -eq "One") {
+    $adDscFile = "Day01.ps1"
+  }
+  elseif ($Day -eq "Two") {
+    $adDscFile = "Day02.ps1"
+  }
+  else {
+    Throw  "INVALID DAY SELECTED"
+  }  
   $domainControllerImageSku = "2012-R2-Datacenter"
 
   # Home Vars
@@ -99,7 +111,7 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   # User Desktop Vars
   $userDesktopVMName = "userdesktop" # Has to be lowercase
   $userDesktopNicIpAddress = "10.0.0.12"
-  $userDesktopVMSize = "Standard_A1_v2"
+  $userDesktopVMSize = "Standard_A2_v2"
   $userDesktopOU = "OU=Computers,OU=Production,DC=ad,DC=waad,DC=training"
 
   # Admin Desktop Vars
@@ -128,65 +140,66 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
 
   # Parameters for the template and configuration
   $DeploymentParameters = @{
-    StudentCode = $StudentCode
-    studentSubnetName = $studentSubnetName
-    virtualNetworkName = $virtualNetworkName
+    StudentCode                = $StudentCode
+    studentSubnetName          = $studentSubnetName
+    virtualNetworkName         = $virtualNetworkName
     virtualNetworkAddressRange = $virtualNetworkAddressRange
-    publicIpName = $publicIpName
-    localAdminUsername = $localAdminUsername
-    studentAdminUsername = $studentAdminUsername
-    studentPassword = $studentPassword
-    storageAccountName = $storageAccountName
-    networkSecurityGroup = $networkSecurityGroup
-    masterResourceGroup = $masterResourceGroup
-    subscriptionId = $subscriptionId
-    windowsImagePublisher = $windowsImagePublisher
-    windowsImageOffer = $windowsImageOffer
-    windowsImageSku = $windowsImageSku
-    adAdminUsername = $adAdminUserName
-    domainName = $domainName
-    dscUrl = $dscUrl
-    classUrl = $classUrl
-    adVMName = $adVMName
-    adNicIpAddress = $adNicIPaddress
-    adVMSize = $adVMSize
-    domainControllerImageSku = $domainControllerImageSku
-    homeVMName = $homeVMName
-    homeNicIpAddress = $homeNicIPaddress
-    homeVMSize = $homeVMSize
-    homeOU = $homeOU
-    terminalServerVMName = $terminalServerVMName
+    publicIpName               = $publicIpName
+    localAdminUsername         = $localAdminUsername
+    studentAdminUsername       = $studentAdminUsername
+    studentPassword            = $studentPassword
+    storageAccountName         = $storageAccountName
+    networkSecurityGroup       = $networkSecurityGroup
+    masterResourceGroup        = $masterResourceGroup
+    subscriptionId             = $subscriptionId
+    windowsImagePublisher      = $windowsImagePublisher
+    windowsImageOffer          = $windowsImageOffer
+    windowsImageSku            = $windowsImageSku
+    adAdminUsername            = $adAdminUserName
+    domainName                 = $domainName
+    dscUrl                     = $dscUrl
+    classUrl                   = $classUrl
+    adVMName                   = $adVMName
+    adNicIpAddress             = $adNicIPaddress
+    adVMSize                   = $adVMSize
+    adDscFile                  = $adDscFile
+    domainControllerImageSku   = $domainControllerImageSku
+    homeVMName                 = $homeVMName
+    homeNicIpAddress           = $homeNicIPaddress
+    homeVMSize                 = $homeVMSize
+    homeOU                     = $homeOU
+    terminalServerVMName       = $terminalServerVMName
     terminalServerNicIpAddress = $terminalServerNicIPaddress
-    terminalServerVMSize = $terminalServerVMSize
-    terminalServerOU = $terminalServerOU
-    userDesktopVMName = $userDesktopVMName
-    userDesktopNicIpAddress = $userDesktopNicIPaddress
-    userDesktopVMSize = $userDesktopVMSize
-    userDesktopOU = $userDesktopOU
-    adminDesktopVMName = $adminDesktopVMName
-    adminDesktopNicIpAddress = $adminDesktopNicIPaddress
-    adminDesktopVMSize = $adminDesktopVMSize
-    adminDesktopOU = $adminDesktopOU
-    linuxVMName = $linuxVMName
-    linuxNicIpAddress = $linuxNicIPaddress
-    linuxVMSize = $linuxVMSize
-    linuxImagePublisher = $linuxImagePublisher
-    linuxImageOffer = $linuxImageOffer
-    linuxImageSku = $linuxImageSku
-    BackupUserName = $TemplateFileParams.Parameters.BackupUsername.value
-    BackupUserPassword = $TemplateFileParams.Parameters.BackupUserPassword.value
-    AccountingUserName = $TemplateFileParams.Parameters.AccountingUserName.value
-    AccountingUserPassword = $TemplateFileParams.Parameters.AccountingUserPassword.value
-    HelpDeskUserName = $TemplateFileParams.Parameters.HelpDeskUserName.value
-    HelpDeskUserPassword = $TemplateFileParams.Parameters.HelpDeskUserPassword.value
-    ServerAdminUsername = $TemplateFileParams.Parameters.ServerAdminUsername.value
-    ServerAdminPassword = $TemplateFileParams.Parameters.ServerAdminPassword.value
+    terminalServerVMSize       = $terminalServerVMSize
+    terminalServerOU           = $terminalServerOU
+    userDesktopVMName          = $userDesktopVMName
+    userDesktopNicIpAddress    = $userDesktopNicIPaddress
+    userDesktopVMSize          = $userDesktopVMSize
+    userDesktopOU              = $userDesktopOU
+    adminDesktopVMName         = $adminDesktopVMName
+    adminDesktopNicIpAddress   = $adminDesktopNicIPaddress
+    adminDesktopVMSize         = $adminDesktopVMSize
+    adminDesktopOU             = $adminDesktopOU
+    linuxVMName                = $linuxVMName
+    linuxNicIpAddress          = $linuxNicIPaddress
+    linuxVMSize                = $linuxVMSize
+    linuxImagePublisher        = $linuxImagePublisher
+    linuxImageOffer            = $linuxImageOffer
+    linuxImageSku              = $linuxImageSku
+    BackupUserName             = $TemplateFileParams.Parameters.BackupUsername.value
+    BackupUserPassword         = $TemplateFileParams.Parameters.BackupUserPassword.value
+    AccountingUserName         = $TemplateFileParams.Parameters.AccountingUserName.value
+    AccountingUserPassword     = $TemplateFileParams.Parameters.AccountingUserPassword.value
+    HelpDeskUserName           = $TemplateFileParams.Parameters.HelpDeskUserName.value
+    HelpDeskUserPassword       = $TemplateFileParams.Parameters.HelpDeskUserPassword.value
+    ServerAdminUsername        = $TemplateFileParams.Parameters.ServerAdminUsername.value
+    ServerAdminPassword        = $TemplateFileParams.Parameters.ServerAdminPassword.value
   }
 
   if ($Test) {
     $SplatParams = @{
-      TemplateFile = $TemplateFile
-      ResourceGroupName = $resourceGroupName 
+      TemplateFile            = $TemplateFile
+      ResourceGroupName       = $resourceGroupName 
       TemplateParameterObject = $DeploymentParameters
     }
     Test-AzureRmResourceGroupDeployment @SplatParams -Verbose
@@ -194,10 +207,10 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   else {
     # Splat the parameters on New-AzureRmResourceGroupDeployment  
     $SplatParams = @{
-      TemplateFile = $TemplateFile 
-      ResourceGroupName = $resourceGroupName 
+      TemplateFile            = $TemplateFile 
+      ResourceGroupName       = $resourceGroupName 
       TemplateParameterObject = $DeploymentParameters
-      Name = $studentCode + "-template"
+      Name                    = $studentCode + "-template"
     }
     try {
       New-AzureRmResourceGroupDeployment -Verbose -ErrorAction Stop @SplatParams
@@ -214,7 +227,7 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     $ipInfo = ( 
       @{
         "publicIpName" = $publicIpName
-        "vmName" = $studentCode
+        "vmName"       = $studentCode
       }
     )
 

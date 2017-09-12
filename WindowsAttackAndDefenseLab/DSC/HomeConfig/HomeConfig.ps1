@@ -13,7 +13,7 @@ configuration HomeConfig
   Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[Start] Got FileURL: $classUrl"
   [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
   Import-DscResource -ModuleName xSystemSecurity -Name xIEEsc
-  Import-DscResource -ModuleName PSDesiredStateConfiguration
+  Import-DscResource -ModuleName PSDesiredStateConfiguration, xTimeZone
 
   Node localhost 
   {
@@ -97,6 +97,11 @@ configuration HomeConfig
         Path = "C:\Windows\Temp\Class.zip"
         Force = $true
         DependsOn = "[Script]DownloadClassFiles"
+    }
+    xTimeZone SetTimezone
+    {
+        IsSingleInstance = 'Yes'
+        TimeZone         = 'Pacific Standard Time'
     }
     LocalConfigurationManager 
     {

@@ -33,7 +33,7 @@
   [Int]$RetryIntervalSec=30
   ) 
 
-  Import-DscResource -ModuleName xActiveDirectory, xDisk, xNetworking, cDisk,xDnsServer, PSDesiredStateConfiguration
+  Import-DscResource -ModuleName xActiveDirectory, xDisk, xNetworking, cDisk,xDnsServer, PSDesiredStateConfiguration, xTimeZone
   [System.Management.Automation.PSCredential]$DomainAdminCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
   [System.Management.Automation.PSCredential]$DomainStudentCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($StudentCreds.UserName)", $StudentCreds.Password)
   [System.Management.Automation.PSCredential]$DomainBackupUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($BackupUserCreds.UserName)", $BackupUserCreds.Password)
@@ -81,6 +81,36 @@
         Force = $true
         DependsOn = "[Script]DownloadClassFiles"
     }
+
+    Script TranscriptsFolder {
+      SetScript = {
+        Try {
+          New-Item -Type Directory "F:\Transcripts" -Force
+          $acl = Get-Acl F:\Transcripts
+          $administrators = [System.Security.Principal.NTAccount] "Administrators"
+          $permission = $administrators,"FullControl","ObjectInherit,ContainerInherit","None","Allow"
+          $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule $permission
+          $everyone = [System.Security.Principal.NTAccount] "Everyone"
+          $permission = $everyone, "Write,ReadAttributes","ObjectInherit,ContainerInherit","None","Allow"
+          $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule $permission
+          $acl.AddAccessRule($accessRule)
+          $creatorOwner = [System.Security.Principal.NTAccount] "Creator Owner"
+          $permission = $creatorOwner, "FullControl","ObjectInherit,ContainerInherit","InheritOnly","Deny"
+          $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule $permission
+          $acl.AddAccessRule($accessRule)
+          $acl | Set-Acl F:\Transcripts\
+          New-SmbShare -Name Transcripts -Path F:\Transcripts -ChangeAccess Everyone
+        }
+        Catch {
+          Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[TranscriptsFolder] Failed.."
+          $exception = $error[0].Exception
+          Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[TranscriptsFolder] Error: $exception"
+        }
+      } 
+      GetScript =  { @{} }
+      TestScript = { $false }
+      DependsOn="[cDiskNoRestart]ADDataDisk"
+    }
     Script ImportGPOs
     {
         SetScript =  {
@@ -88,9 +118,24 @@
           Try {
             New-GPO -Name "WAAD Default"
             New-GPO -Name "Student Computers"
-            Import-GPO -Path "C:\Class" -BackupId '{7EE86E9B-58D1-424D-A462-3AEF189923A0}' -TargetName "WAAD Default"
-            Import-GPO -Path "C:\Class" -BackupId '{D8BF6BAB-A17B-4673-8F2C-9EAFDDC5A236}'-TargetName "Student Computers"
+            New-GPO -Name "Audit Policy"
+            New-GPO -Name "Command Line Logging"
+            New-GPO -Name "PowerShell Logging"
+            New-GPO -Name "Windows Event Forwarding"
+            New-GPO -Name "Restrict Network Logons"
+            Import-GPO -Path "C:\Class\GPOs" -BackupId '{43EAEAF9-8569-423B-A260-C426099F6C57}' -TargetName "WAAD Default"
+            Import-GPO -Path "C:\Class\GPOs" -BackupId '{D8BF6BAB-A17B-4673-8F2C-9EAFDDC5A236}' -TargetName "Student Computers"
+            Import-GPO -Path "C:\Class\GPOs" -BackupId '{4C6EB35D-10D8-468D-B02A-6CB9660F7D74}' -TargetName "Audit Policy"
+            Import-GPO -Path "C:\Class\GPOs" -BackupId '{D85D37F5-37DA-4FED-87E9-F91580F8D980}' -TargetName "Command Line Logging"
+            Import-GPO -Path "C:\Class\GPOs" -BackupId '{1AE94182-6E8C-42F1-BCDA-DBB7720FBA75}' -TargetName "PowerShell Logging"
+            Import-GPO -Path "C:\Class\GPOs" -BackupId '{18073D21-902D-4FA0-A696-21AEDAD66244}' -TargetName "Windows Event Forwarding"
+            Import-GPO -Path "C:\Class\GPOs" -BackupId '{B4F0C06E-B982-4679-A46F-A625759B669B}' -TargetName "Restrict Network Logons"
             New-GPLink -Name "WAAD Default" -Target "DC=AD,DC=WAAD,DC=TRAINING"
+            New-GPLink -Name "Audit Policy" -Target "DC=AD,DC=WAAD,DC=TRAINING"
+            New-GPLink -Name "Command Line Logging" -Target "DC=AD,DC=WAAD,DC=TRAINING"
+            New-GPLink -Name "PowerShell Logging" -Target "DC=AD,DC=WAAD,DC=TRAINING"
+            New-GPLink -Name "Windows Event Forwarding"-Target "DC=AD,DC=WAAD,DC=TRAINING"
+            New-GPLink -Name "Restrict Network Logons"-Target "OU=Production,DC=AD,DC=WAAD,DC=TRAINING"
             New-GPLink -Name "Student Computers" -Target "OU=Computers,OU=Class,DC=AD,DC=WAAD,DC=TRAINING"
           }
           Catch {
@@ -103,53 +148,14 @@
         TestScript = { $false }
         DependsOn = "[Archive]UnzipClassFiles","[xADOrganizationalUnit]ProductionServersOU","[xADOrganizationalUnit]ClassComputersOU"
     }
-    Script CreateFillerUsers
-    {
-        SetScript =  {
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[CreateFillerUsers] Running.."
-            $users = Import-Csv C:\Class\user_data.csv
-            $userOus = Get-ADOrganizationalUnit -Filter * -SearchBase "OU=Staff,OU=Production,DC=ad,dc=waad,dc=training"
-
-            forEach ($user in $users) {
-                $username = $user.username
-                $i++
-                Try {
-                    $first = $user.first_name
-                    $last = $user.last_name
-                    $fullName = "$first $last"
-                    $username = $user.username
-                    $password = $user.password + "ase235"
-                    $title = $user.title
-                        
-                    Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[CreateFillerUsers] Creating $username.."
-                    $OU = Get-Random $userOUs
-                    $NewUser = New-ADUser -Name $fullName -GivenName $first -Surname $last -SamAccountName $username `
-                        -UserPrincipalName "$username@ad.evil.training" -AccountPassword (ConvertTo-SecureString -String $password -AsPlainText -Force) `
-                        -Path $OU
-                    if (!($i % 3 -eq 0)) {
-                      Enable-ADAccount $NewUser
-                    }
-                }
-                Catch {
-                    Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[CreateFillerUsers] Failed creating $username.."
-                    $exception = $error[0].Exception
-                    Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[CreateFillerUsers] Error: $exception"
-                }
-            }
-
-        }
-        GetScript =  { @{} }
-        TestScript = { $false }
-        DependsOn = "[Archive]UnzipClassFiles","[xADOrganizationalUnit]ProductionStaffOU"
-    }
     WindowsFeature DNS 
     { 
       Ensure = "Present" 
       Name = "DNS"		
     }
-    xDnsRecord LinuxHost
+    xDnsRecord Pwnbox
     {
-        Name = "linux"
+        Name = "pwnbox"
         Target = $LinuxNicIpAddress
         Zone = $DomainName
         Type = "ARecord"
@@ -398,6 +404,22 @@
       MembersToInclude = $HelpDeskUserUsername
       Path = "OU=Groups,OU=Production,DC=ad,DC=waad,DC=training"
       DependsOn = "[xADOrganizationalUnit]ProductionGroupsOU", "[xADUser]HelpdeskUser"
+    }
+    xADGroup ServiceAccounts
+    {
+      GroupName = "Service Accounts"
+      GroupScope = "Global"
+      Category = "Security"
+      Description = "Robots that do our bidding"
+      Ensure = 'Present'
+      MembersToInclude = $BackupUserUsername
+      Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
+      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser"
+    }
+    xTimeZone SetTimezone
+    {
+        IsSingleInstance = 'Yes'
+        TimeZone         = 'Pacific Standard Time'
     }
     LocalConfigurationManager 
     {

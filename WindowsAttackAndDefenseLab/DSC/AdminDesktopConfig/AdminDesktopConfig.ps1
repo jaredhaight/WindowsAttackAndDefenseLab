@@ -1,14 +1,7 @@
 configuration AdminDesktopConfig 
 { 
-  param 
-  ( 
-       [Parameter(Mandatory)]
-       [String]$DomainName,
-       [Parameter(Mandatory)]
-       [System.Management.Automation.PSCredential]$Admincreds
-   )
-  Import-DscResource -ModuleName PSDesiredStateConfiguration
-  [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
+  Import-DscResource -ModuleName PSDesiredStateConfiguration,xTimeZone
+
   Node "admindesktop" {
     Script DownloadFiles {
       SetScript  = { 
@@ -33,19 +26,15 @@ configuration AdminDesktopConfig
       Force       = $true
       DependsOn   = "[Script]DownloadFiles"
     }
-    File HideDSCFILES {
-      DestinationPath = "C:\DSFILES"
-      Type            = "Directory"
-      Attributes      = "Hidden"
-      DependsOn       = "[Archive]UnzipFiles"
-    }
-    Group AddToAdmins
+    xTimeZone SetTimezone
     {
-        GroupName='Administrators'   
-        Ensure= 'Present'             
-        MembersToInclude= "$DomainName\Helpdesk Users", "$DomainName\Accounting Users", "$DomainName\LocalAdmins"
-        Credential = $DomainCreds    
-        PsDscRunAsCredential = $DomainCreds
-    }  
+        IsSingleInstance = 'Yes'
+        TimeZone         = 'Pacific Standard Time'
+    }
+    LocalConfigurationManager 
+    {
+        ConfigurationMode = 'ApplyOnly'
+        RebootNodeIfNeeded = $true
+    }
   } 
 }
