@@ -23,7 +23,7 @@
     "localAdminusername": {
       "type": "string"
     },
-    "studentAdminusername": {
+    "studentAdminUsername": {
       "type": "string"
     },
     "studentPassword": {
@@ -51,6 +51,12 @@
       "type": "string"
     },
     "ServerAdminPassword": {
+      "type": "securestring"
+    },
+    "HelperAccountUsername": {
+      "type": "string"
+    },
+    "HelperAccountPassword": {
       "type": "securestring"
     },
     "storageAccountName": {
@@ -101,7 +107,7 @@
     "windowsImageSku": {
       "type": "string"
     },
-    "domainControllerImageSku": {
+    "windows2012Sku": {
       "type": "string"
     },
     "terminalServerVMName": {
@@ -188,7 +194,8 @@
       "kind": "Storage",
       "properties": {},
       "tags": {
-        "displayName": "StorageAccount"
+        "displayName": "StorageAccount",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -215,7 +222,8 @@
         ]
       },
       "tags": {
-        "displayName": "VirtualNetwork"
+        "displayName": "VirtualNetwork",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -241,7 +249,8 @@
         ]
       },
       "tags": {
-        "displayName": "DomainControllerNic"
+        "displayName": "DomainControllerNic",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -266,7 +275,7 @@
           "imageReference": {
             "publisher": "[parameters('windowsImagePublisher')]",
             "offer": "[parameters('windowsImageOffer')]",
-            "sku": "[parameters('domainControllerImageSku')]",
+            "sku": "[parameters('windows2012Sku')]",
             "version": "latest"
           },
           "osDisk": {
@@ -322,7 +331,7 @@
                   "Password": "PrivateSettingsRef:StudentPassword"
                 },
                 "StudentCreds": {
-                  "UserName": "[parameters('studentAdminusername')]",
+                  "UserName": "[parameters('studentAdminUsername')]",
                   "Password": "PrivateSettingsRef:StudentPassword"
                 },
                 "BackupUserCreds": {
@@ -341,6 +350,10 @@
                   "UserName": "[parameters('ServerAdminUserName')]",
                   "Password": "PrivateSettingsRef:ServerAdminPassword"
                 },
+                "HelperAccountCreds": {
+                  "UserName": "[parameters('HelperAccountUserName')]",
+                  "Password": "PrivateSettingsRef:HelperAccountPassword"
+                },
                 "classUrl": "[parameters('classUrl')]",
                 "linuxNicIpAddress": "[parameters('linuxNicIpAddress')]"
               }
@@ -351,14 +364,16 @@
                 "BackupUserPassword": "[parameters('BackupUserPassword')]",
                 "HelpDeskUserPassword": "[parameters('HelpDeskUserPassword')]",
                 "AccountingUserPassword": "[parameters('AccountingUserPassword')]",
-                "ServerAdminPassword": "[parameters('ServerAdminPassword')]"
+                "ServerAdminPassword": "[parameters('ServerAdminPassword')]",
+                "HelperAccountPassword": "[parameters('HelperAccountPassword')]"
               }
             }
           }
         }
       ],
       "tags": {
-        "displayName": "DomainControllerVM"
+        "displayName": "DomainControllerVM",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -391,7 +406,8 @@
         }
       },
       "tags": {
-        "displayName": "LinuxNic"
+        "displayName": "LinuxNic",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -409,7 +425,7 @@
         },
         "osProfile": {
           "computerName": "[parameters('linuxVmName')]",
-          "adminUsername": "[parameters('localAdminusername')]",
+          "adminUsername": "[parameters('studentAdminUsername')]",
           "adminPassword": "[parameters('studentPassword')]"
         },
         "storageProfile": {
@@ -449,7 +465,8 @@
         }
       },
       "tags": {
-        "displayName": "LinuxVM"
+        "displayName": "LinuxVM",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -473,7 +490,8 @@
         }
       },
       "tags": {
-        "displayName": "LinuxVmBootstrap"
+        "displayName": "LinuxVmBootstrap",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -488,7 +506,8 @@
         }
       },
       "tags": {
-        "displayName": "PublicIPAddress"
+        "displayName": "PublicIPAddress",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -523,7 +542,8 @@
         }
       },
       "tags": {
-        "displayName": "homeNic"
+        "displayName": "homeNic",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -581,7 +601,8 @@
         }
       },
       "tags": {
-        "displayName": "homeVm"
+        "displayName": "homeVm",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -610,7 +631,8 @@
         }
       },
       "tags": {
-        "displayName": "homeDomainJoin"
+        "displayName": "homeDomainJoin",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -627,7 +649,7 @@
         "typeHandlerVersion": "2.19",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "wmfVersion": "5.0",
+          
           "modulesUrl": "[concat(parameters('dscUrl'), 'HomeConfig.zip')]",
           "configurationFunction": "HomeConfig.ps1\\HomeConfig",
           "Properties": {
@@ -646,7 +668,8 @@
         }
       },
       "tags": {
-        "displayName": "homeDsc"
+        "displayName": "homeDsc",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -677,7 +700,8 @@
         }
       },
       "tags": {
-        "displayName": "terminalServerNic"
+        "displayName": "terminalServerNic",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -702,7 +726,7 @@
           "imageReference": {
             "publisher": "[parameters('windowsImagePublisher')]",
             "offer": "[parameters('windowsImageOffer')]",
-            "sku": "[parameters('windowsImageSku')]",
+            "sku": "[parameters('Windows2012Sku')]",
             "version": "latest"
           },
           "osDisk": {
@@ -735,7 +759,8 @@
         }
       },
       "tags": {
-        "displayName": "terminalServerVm"
+        "displayName": "terminalServerVm",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -764,7 +789,8 @@
         }
       },
       "tags": {
-        "displayName": "terminalServerDomainJoin"
+        "displayName": "terminalServerDomainJoin",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -781,7 +807,7 @@
         "typeHandlerVersion": "2.19",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "wmfVersion": "5.0",
+          
           "modulesUrl": "[concat(parameters('dscUrl'), 'TerminalServerConfig.zip')]",
           "configurationFunction": "TerminalServerConfig.ps1\\TerminalServerConfig",
           "Properties": {
@@ -800,7 +826,8 @@
         }
       },
       "tags": {
-        "displayName": "terminalServerDsc"
+        "displayName": "terminalServerDsc",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -831,7 +858,8 @@
         }
       },
       "tags": {
-        "displayName": "userDesktopNic"
+        "displayName": "userDesktopNic",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -856,7 +884,7 @@
           "imageReference": {
             "publisher": "[parameters('windowsImagePublisher')]",
             "offer": "[parameters('windowsImageOffer')]",
-            "sku": "[parameters('windowsImageSku')]",
+            "sku": "[parameters('Windows2012Sku')]",
             "version": "latest"
           },
           "osDisk": {
@@ -889,7 +917,8 @@
         }
       },
       "tags": {
-        "displayName": "userDesktopVm"
+        "displayName": "userDesktopVm",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -935,7 +964,7 @@
         "typeHandlerVersion": "2.19",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "wmfVersion": "5.0",
+          
           "modulesUrl": "[concat(parameters('dscUrl'), 'UserDesktopConfig.zip')]",
           "configurationFunction": "userDesktopConfig.ps1\\userDesktopConfig",
           "Properties": {
@@ -959,7 +988,8 @@
         }
       },
       "tags": {
-        "displayName": "userDesktopDsc"
+        "displayName": "userDesktopDsc",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -990,7 +1020,8 @@
         }
       },
       "tags": {
-        "displayName": "adminDesktopNic"
+        "displayName": "adminDesktopNic",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -1015,7 +1046,7 @@
           "imageReference": {
             "publisher": "[parameters('windowsImagePublisher')]",
             "offer": "[parameters('windowsImageOffer')]",
-            "sku": "[parameters('windowsImageSku')]",
+            "sku": "[parameters('Windows2012Sku')]",
             "version": "latest"
           },
           "osDisk": {
@@ -1048,7 +1079,8 @@
         }
       },
       "tags": {
-        "displayName": "adminDesktopVm"
+        "displayName": "adminDesktopVm",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -1077,7 +1109,8 @@
         }
       },
       "tags": {
-        "displayName": "adminDesktopDomainJoin"
+        "displayName": "adminDesktopDomainJoin",
+        "studentCode": "[parameters('studentCode')]"
       }
     },
     {
@@ -1094,14 +1127,17 @@
         "typeHandlerVersion": "2.19",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "wmfVersion": "5.0",
+          
           "modulesUrl": "[concat(parameters('dscUrl'), 'AdminDesktopConfig.zip')]",
           "configurationFunction": "adminDesktopConfig.ps1\\AdminDesktopConfig",
-          "Properties": { }
+          "Properties": { 
+            "classUrl": "[parameters('classUrl')]"
+          }
         }
       },
       "tags": {
-        "displayName": "adminDesktopDsc"
+        "displayName": "adminDesktopDsc",
+        "studentCode": "[parameters('studentCode')]"
       }
     }
   ]

@@ -12,8 +12,7 @@ configuration HomeConfig
   
   Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[Start] Got FileURL: $classUrl"
   [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
-  Import-DscResource -ModuleName xSystemSecurity -Name xIEEsc
-  Import-DscResource -ModuleName PSDesiredStateConfiguration, xTimeZone
+  Import-DscResource -ModuleName PSDesiredStateConfiguration
 
   Node localhost 
   {
@@ -51,32 +50,11 @@ configuration HomeConfig
     {
         Ensure = "Present" 
         Name = "GPMC"
-    }
-    xIEEsc DisableIEEscAdmin
+    }    
+    WindowsFeature RemoteDesktop
     {
-        IsEnabled = $false
-        UserRole  = "Administrators"
-    }
-    xIEEsc DisableIEEscUser
-    {
-        IsEnabled = $false
-        UserRole  = "Users"
-    }
-    Group AddLocalAdminsGroup
-    {
-        GroupName='Administrators'   
-        Ensure= 'Present'             
-        MembersToInclude= "$DomainName\LocalAdmins"
-        Credential = $DomainCreds    
-        PsDscRunAsCredential = $DomainCreds
-    }
-    Group AddClassRDPGroup
-    {
-        GroupName='Remote Desktop Users'   
-        Ensure= 'Present'             
-        MembersToInclude= "$DomainName\Class Remote Desktop Access"
-        Credential = $DomainCreds    
-        PsDscRunAsCredential = $DomainCreds
+        Ensure = "Present" 
+        Name = "RDS-RD-Server"
     }
     Script DownloadClassFiles
     {
@@ -98,10 +76,40 @@ configuration HomeConfig
         Force = $true
         DependsOn = "[Script]DownloadClassFiles"
     }
-    xTimeZone SetTimezone
+    Script CreateMSTCShortcut
     {
-        IsSingleInstance = 'Yes'
-        TimeZone         = 'Pacific Standard Time'
+        SetScript = {
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[CreateMSTCShortcut] Creating Shortcut"
+            $WshShell = New-Object -comObject WScript.Shell
+            $Shortcut = $WshShell.CreateShortcut("C:\Users\Public\Desktop\Remote Desktop.lnk")
+            $Shortcut.TargetPath = "C:\Windows\System32\mstsc.exe"
+            $Shortcut.Save()
+        }
+        GetScript = { @{} }
+        TestScript = { $false }
+    }
+    Script CreatePickerShortcut
+    {
+        SetScript = {
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[CreatePickerShortcut] Creating Shortcut"
+            $WshShell = New-Object -comObject WScript.Shell
+            $Shortcut = $WshShell.CreateShortcut("C:\Users\Public\Desktop\Exercise Picker.lnk")
+            $Shortcut.TargetPath = "C:\Class\ExercisePicker\ExercisePicker.exe"
+            $Shortcut.WorkingDirectory = "C:\Class\ExercisePicker\"
+            $Shortcut.Save()
+        }
+        GetScript = { @{} }
+        TestScript = { $false }
+        DependsOn = "[Archive]UnzipClassFiles"
+    }
+    Script SetTimeZone
+    {
+        SetScript =  { 
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[SetTimeZone] Running.."
+            cmd.exe /c 'tzutil /s "Eastern Standard Time"'
+        }
+        GetScript =  { @{} }
+        TestScript = { $false }
     }
     LocalConfigurationManager 
     {

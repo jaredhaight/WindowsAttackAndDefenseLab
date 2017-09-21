@@ -16,7 +16,7 @@ workflow Remove-AllAzureRmResourceGroups {
   $resourceGroups = Get-AzureRmResourceGroup -ErrorAction Stop
  
   if ($resourceGroups.Count -gt 0) {
-    forEach -parallel -throttle 15 ($resourceGroup in $resourceGroups) {
+    forEach -parallel -throttle 30 ($resourceGroup in $resourceGroups) {
         $resourceGroupName = $resourceGroup.ResourceGroupName.toString()
         if ($resourceGroupName -notlike "*master") {
             Add-AzureRmAccount -Credential $credentials

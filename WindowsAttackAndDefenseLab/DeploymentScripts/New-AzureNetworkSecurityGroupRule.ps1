@@ -9,9 +9,9 @@ function New-AzureLabAccessRule {
     
     [int]$Port=3389,
     
-    [string]$ResourceGroup="evil.training-master",
+    [string]$ResourceGroup="waad.training-master",
     
-    [string[]]$NetworkSecurityGroups=('evil.training-nsg-eastus2','evil.training-nsg-westus2')
+    [string[]]$NetworkSecurityGroups=('waad.training-nsg-eastus2','waad.training-nsg-westus2')
   )
 
   # Import Azure Service Management module

@@ -20,8 +20,11 @@
   [Parameter(Mandatory)]
   [System.Management.Automation.PSCredential]$AccountingUserCreds,
 
-    [Parameter(Mandatory)]
+  [Parameter(Mandatory)]
   [System.Management.Automation.PSCredential]$ServerAdminCreds,
+
+  [Parameter(Mandatory)]
+  [System.Management.Automation.PSCredential]$HelperAccountCreds,
 
   [Parameter(Mandatory)]
   [string]$classUrl,
@@ -40,27 +43,20 @@
   [System.Management.Automation.PSCredential]$DomainHelpDeskUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($HelpDeskUserCreds.UserName)", $HelpDeskUserCreds.Password)
   [System.Management.Automation.PSCredential]$DomainAccountingUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($AccountingUserCreds.UserName)", $AccountingUserCreds.Password)
   [System.Management.Automation.PSCredential]$DomainServerAdminCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($ServerAdminCreds.UserName)", $ServerAdminCreds.Password)
+  [System.Management.Automation.PSCredential]$DomainHelperAccountCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($HelperAccountCreds.UserName)", $HelperAccountCreds.Password)
 
   $AdminUserName = $Admincreds.UserName
-  $StudentUserName = $StudentCreds.UserName
   $BackupUserUsername = $BackupUserCreds.UserName
   $HelpDeskUserUsername = $HelpDeskUserCreds.UserName
   $AccountingUserUsername = $AccountingUserCreds.UserName
   $ServerAdminUsername = $ServerAdminCreds.UserName
+  $HelperAccountUsername = $HelperAccountCreds.UserName
   
   $Interface=Get-NetAdapter | Where-Object Name -Like "Ethernet*" | Select-Object -First 1
   $InterfaceAlias=$($Interface.Name)
 
   Node localhost
   {
-    Script AddADDSFeature {
-      SetScript = {
-        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[AddADDSFeature] Installing ADDS.."
-        Add-WindowsFeature "AD-Domain-Services" -ErrorAction SilentlyContinue   
-      }
-      GetScript =  { @{} }
-      TestScript = { $false }
-    }
     Script DownloadClassFiles
     {
         SetScript =  { 
@@ -81,36 +77,27 @@
         Force = $true
         DependsOn = "[Script]DownloadClassFiles"
     }
-
-    Script TranscriptsFolder {
-      SetScript = {
-        Try {
-          New-Item -Type Directory "F:\Transcripts" -Force
-          $acl = Get-Acl F:\Transcripts
-          $administrators = [System.Security.Principal.NTAccount] "Administrators"
-          $permission = $administrators,"FullControl","ObjectInherit,ContainerInherit","None","Allow"
-          $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule $permission
-          $everyone = [System.Security.Principal.NTAccount] "Everyone"
-          $permission = $everyone, "Write,ReadAttributes","ObjectInherit,ContainerInherit","None","Allow"
-          $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule $permission
-          $acl.AddAccessRule($accessRule)
-          $creatorOwner = [System.Security.Principal.NTAccount] "Creator Owner"
-          $permission = $creatorOwner, "FullControl","ObjectInherit,ContainerInherit","InheritOnly","Deny"
-          $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule $permission
-          $acl.AddAccessRule($accessRule)
-          $acl | Set-Acl F:\Transcripts\
-          New-SmbShare -Name Transcripts -Path F:\Transcripts -ChangeAccess Everyone
+    
+    Script DownloadWAADFiles
+    {
+        SetScript =  { 
+            $file = $using:classUrl + 'WAAD.zip'
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading $file"
+            Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\WAAD.zip
         }
-        Catch {
-          Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[TranscriptsFolder] Failed.."
-          $exception = $error[0].Exception
-          Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[TranscriptsFolder] Error: $exception"
-        }
-      } 
-      GetScript =  { @{} }
-      TestScript = { $false }
-      DependsOn="[cDiskNoRestart]ADDataDisk"
+        GetScript =  { @{} }
+        TestScript = { 
+            Test-Path C:\Windows\Temp\WAAD.zip
+         }
     }
+    Archive UnzipWAADFiles
+    {
+        Ensure = "Present"
+        Destination = "C:\WAAD"
+        Path = "C:\Windows\Temp\WAAD.zip"
+        Force = $true
+        DependsOn = "[Script]DownloadWAADFiles"
+    }    
     Script ImportGPOs
     {
         SetScript =  {
@@ -123,13 +110,20 @@
             New-GPO -Name "PowerShell Logging"
             New-GPO -Name "Windows Event Forwarding"
             New-GPO -Name "Restrict Network Logons"
-            Import-GPO -Path "C:\Class\GPOs" -BackupId '{43EAEAF9-8569-423B-A260-C426099F6C57}' -TargetName "WAAD Default"
-            Import-GPO -Path "C:\Class\GPOs" -BackupId '{D8BF6BAB-A17B-4673-8F2C-9EAFDDC5A236}' -TargetName "Student Computers"
-            Import-GPO -Path "C:\Class\GPOs" -BackupId '{4C6EB35D-10D8-468D-B02A-6CB9660F7D74}' -TargetName "Audit Policy"
-            Import-GPO -Path "C:\Class\GPOs" -BackupId '{D85D37F5-37DA-4FED-87E9-F91580F8D980}' -TargetName "Command Line Logging"
-            Import-GPO -Path "C:\Class\GPOs" -BackupId '{1AE94182-6E8C-42F1-BCDA-DBB7720FBA75}' -TargetName "PowerShell Logging"
-            Import-GPO -Path "C:\Class\GPOs" -BackupId '{18073D21-902D-4FA0-A696-21AEDAD66244}' -TargetName "Windows Event Forwarding"
-            Import-GPO -Path "C:\Class\GPOs" -BackupId '{B4F0C06E-B982-4679-A46F-A625759B669B}' -TargetName "Restrict Network Logons"
+            New-GPO -Name "Disable Firewall"
+            New-GPO -Name "Shared Folder"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{FF68FA65-A8D6-448D-87E5-6140373380CF}' -TargetName "Disable Firewall"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{BD3497A3-0BBC-4F59-8B26-F54C6CA6FD07}' -TargetName "Shared Folder"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{AC5D004D-2C93-46AB-A1F8-2D6A64CF491F}' -TargetName "WAAD Default"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{D8BF6BAB-A17B-4673-8F2C-9EAFDDC5A236}'-TargetName "Student Computers"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{4C6EB35D-10D8-468D-B02A-6CB9660F7D74}' -TargetName "Audit Policy"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{D85D37F5-37DA-4FED-87E9-F91580F8D980}' -TargetName "Command Line Logging"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{18073D21-902D-4FA0-A696-21AEDAD66244}' -TargetName "Windows Event Forwarding"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{B4F0C06E-B982-4679-A46F-A625759B669B}' -TargetName "Restrict Network Logons"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{772B1393-475F-47BC-938F-6BDBDABAB3F0}' -TargetName "PowerShell Logging"
+            New-GPLink -Name "Disable Firewall" -Target "OU=Domain Controllers,DC=ad,DC=waad,DC=training"
+            New-GPLink -Name "Disable Firewall" -Target "OU=Production,DC=AD,DC=WAAD,DC=TRAINING"
+            New-GPLink -Name "Shared Folder" -Target "OU=Production,DC=AD,DC=WAAD,DC=TRAINING"
             New-GPLink -Name "WAAD Default" -Target "DC=AD,DC=WAAD,DC=TRAINING"
             New-GPLink -Name "Audit Policy" -Target "DC=AD,DC=WAAD,DC=TRAINING"
             New-GPLink -Name "Command Line Logging" -Target "DC=AD,DC=WAAD,DC=TRAINING"
@@ -145,8 +139,29 @@
           }
         }
         GetScript =  { @{} }
-        TestScript = { $false }
+        TestScript = { try {Get-GPO -Name "WAAD Default2" -ErrorAction Stop | Out-null; return $true} catch { $false } }
         DependsOn = "[Archive]UnzipClassFiles","[xADOrganizationalUnit]ProductionServersOU","[xADOrganizationalUnit]ClassComputersOU"
+    }    
+    Script SetupWEC
+    {
+        SetScript =  {
+          Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[ImportGPOs] Running.." 
+          Try {
+            wecutil qc /q
+            wecutil cs C:\Class\Subscriptions\PowerShell.xml
+            wecutil cs C:\Class\Subscriptions\Processes.xml
+            wecutil cs C:\Class\Subscriptions\WindowsDefender.xml
+            wecutil cs C:\Class\Subscriptions\SecurityLogCleared.xml
+          }
+          Catch {
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[SetupWEC] Failed.."
+            $exception = $error[0].Exception
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[SetupWEC] Error: $exception"
+          }
+        }
+        GetScript =  { @{} }
+        TestScript = { $false }
+        DependsOn = "[Script]ImportGPOs"
     }
     WindowsFeature DNS 
     { 
@@ -206,9 +221,13 @@
     { 
       Ensure = "Present" 
       Name = "AD-Domain-Services"
-      DependsOn="[cDiskNoRestart]ADDataDisk", "[Script]AddADDSFeature"
+      DependsOn="[cDiskNoRestart]ADDataDisk"
     } 
-
+    WindowsFeature DotNetCore 
+    {
+      Ensure = "Present" 
+      Name   = "Net-Framework-Core"
+    }
     xADDomain FirstDS 
     {
       DomainName = $DomainName
@@ -294,16 +313,6 @@
       Ensure = 'Present'
       DependsOn = "[xADOrganizationalUnit]ClassOU"
     }
-    xADUser StudentUser
-    {
-        DomainName = $DomainName
-        DomainAdministratorCredential = $DomainAdminCreds
-        UserName = "StudentUser"
-        Password = $DomainStudentCreds
-        Ensure = "Present"
-        Path = "OU=Users,OU=Class,DC=ad,DC=waad,DC=training"
-        DependsOn = "[xADOrganizationalUnit]ClassUsersOU"
-    }
     xADUser StudentAdmin
     {
         DomainName = $DomainName
@@ -354,27 +363,15 @@
         Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
     }
-    xADGroup LocalAdmins
+    xADUser HelperAccount
     {
-      GroupName = "LocalAdmins"
-      GroupScope = "Global"
-      Category = "Security"
-      Description = "Group for Local Admins"
-      Ensure = 'Present'
-      MembersToInclude = $BackupUserUsername
-      Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
-      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser"
-    }
-    xADGroup ClassRDPAccess
-    {
-      GroupName = "Class Remote Desktop Access"
-      GroupScope = "Global"
-      Category = "Security"
-      Description = "Group for RDP Access to objects in the Class OU"
-      Ensure = 'Present'
-      MembersToInclude = "StudentUser"
-      Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
-      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]StudentUser"
+        DomainName = $DomainName
+        DomainAdministratorCredential = $DomainAdminCreds
+        UserName = $HelperAccountUsername
+        Password = $DomainHelperAccountCreds
+        Ensure = "Present"
+        Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
+        DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
     }
     xADGroup DomainAdmins
     {
@@ -396,18 +393,18 @@
     }
     xADGroup HelpdeskUsers
     {
-      GroupName = "Helpdesk Users"
+      GroupName = "HelpdeskUsers"
       GroupScope = "Global"
       Category = "Security"
       Description = "The valiant frontline of IT Support"
       Ensure = 'Present'
-      MembersToInclude = $HelpDeskUserUsername
+      MembersToInclude = $HelpDeskUserUsername, $HelperAccountUsername
       Path = "OU=Groups,OU=Production,DC=ad,DC=waad,DC=training"
       DependsOn = "[xADOrganizationalUnit]ProductionGroupsOU", "[xADUser]HelpdeskUser"
     }
     xADGroup ServiceAccounts
     {
-      GroupName = "Service Accounts"
+      GroupName = "ServiceAccounts"
       GroupScope = "Global"
       Category = "Security"
       Description = "Robots that do our bidding"

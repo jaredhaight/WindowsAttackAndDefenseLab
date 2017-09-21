@@ -11,7 +11,7 @@ workflow New-WindowsAttackAndDefenseLab {
   ) 
 
   $studentData = Import-CSV $csvSource
-  foreach -parallel -throttle 20 ($student in $studentData) {
+  foreach -parallel -throttle 30 ($student in $studentData) {
     $studentPassword = $student.password
     $studentCode = $student.code.toString()
     $studentNumber = $student.id
@@ -20,8 +20,8 @@ workflow New-WindowsAttackAndDefenseLab {
     if ($studentNumber % 2 -eq 0) {
       $region = 'westus2'
     }
-    Write-Output "Sending $studentCode to $region"
-    Invoke-CreateWindowsAttackAndDefenseLab -credentials $credentials -studentCode $studentCode -studentPassword $studentPassword -region $region -place $studentNumber -total $studentData.count
+    Write-Output "$studentNumber | $studentCode | $studentPassword | $region"
+    Invoke-CreateWindowsAttackAndDefenseLab -credentials $credential -studentCode $studentCode -studentPassword $studentPassword -region $region -place $studentNumber -total $studentData.count -Day $day
   }
 }
 
@@ -46,7 +46,7 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   # Import Azure Service Management module
   Import-Module AzureRM
 
-  Write-Progress -Activity "Deploying." -Status "[$place/$total] Deployment for $studentCode running.."  
+  Write-Progress -Activity "Deploying." -Status "Deploying.." -CurrentOperation "[$place/$total] Deployment for $studentCode running.."
 
   # Check if logged in to Azure
   Try {
@@ -68,8 +68,8 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   $localAdminUsername = "localadmin"
   $studentAdminUsername = "studentadmin"
   $storageAccountName = $studentCode + "storage"    # Lowercase required
-  $TemplateFile = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PSScriptRoot, '..\azuredeploy.json'))
-  $TemplateParameterFile = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PSScriptRoot, '..\azuredeploy.parameters.json'))
+  $TemplateFile = 'C:\Users\jared\repos\WindowsAttackAndDefenseLab\WindowsAttackAndDefenseLab\azuredeploy.json'
+  $TemplateParameterFile = 'C:\Users\jared\repos\WindowsAttackAndDefenseLab\WindowsAttackAndDefenseLab\azuredeploy.parameters.json'
   $networkSecurityGroup = "waad.training-nsg-" + $region
   $subscriptionId = (Get-AzureRmContext).Subscription.SubscriptionId
   $windowsImagePublisher = "MicrosoftWindowsServer"
@@ -94,7 +94,7 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   else {
     Throw  "INVALID DAY SELECTED"
   }  
-  $domainControllerImageSku = "2012-R2-Datacenter"
+  $windows2012Sku = "2012-R2-Datacenter"
 
   # Home Vars
   $homeVMName = "home" # Has to be lowercase
@@ -163,7 +163,7 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     adNicIpAddress             = $adNicIPaddress
     adVMSize                   = $adVMSize
     adDscFile                  = $adDscFile
-    domainControllerImageSku   = $domainControllerImageSku
+    windows2012Sku             = $windows2012Sku
     homeVMName                 = $homeVMName
     homeNicIpAddress           = $homeNicIPaddress
     homeVMSize                 = $homeVMSize
@@ -194,6 +194,8 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     HelpDeskUserPassword       = $TemplateFileParams.Parameters.HelpDeskUserPassword.value
     ServerAdminUsername        = $TemplateFileParams.Parameters.ServerAdminUsername.value
     ServerAdminPassword        = $TemplateFileParams.Parameters.ServerAdminPassword.value
+    HelperAccountUsername = $TemplateFileParams.Parameters.HelperAccountUsername.value
+    HelperAccountPassword = $TemplateFileParams.Parameters.HelperAccountPassword.value
   }
 
   if ($Test) {

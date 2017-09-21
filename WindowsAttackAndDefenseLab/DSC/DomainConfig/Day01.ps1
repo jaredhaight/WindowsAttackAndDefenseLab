@@ -22,6 +22,9 @@
 
     [Parameter(Mandatory)]
   [System.Management.Automation.PSCredential]$ServerAdminCreds,
+  
+  [Parameter(Mandatory)]
+  [System.Management.Automation.PSCredential]$HelperAccountCreds,
 
   [Parameter(Mandatory)]
   [string]$classUrl,
@@ -40,27 +43,20 @@
   [System.Management.Automation.PSCredential]$DomainHelpDeskUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($HelpDeskUserCreds.UserName)", $HelpDeskUserCreds.Password)
   [System.Management.Automation.PSCredential]$DomainAccountingUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($AccountingUserCreds.UserName)", $AccountingUserCreds.Password)
   [System.Management.Automation.PSCredential]$DomainServerAdminCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($ServerAdminCreds.UserName)", $ServerAdminCreds.Password)
+  [System.Management.Automation.PSCredential]$DomainHelperAccountCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($HelperAccountCreds.UserName)", $HelperAccountCreds.Password)
 
   $AdminUserName = $Admincreds.UserName
-  $StudentUserName = $StudentCreds.UserName
   $BackupUserUsername = $BackupUserCreds.UserName
   $HelpDeskUserUsername = $HelpDeskUserCreds.UserName
   $AccountingUserUsername = $AccountingUserCreds.UserName
   $ServerAdminUsername = $ServerAdminCreds.UserName
+  $HelperAccountUsername = $HelperAccountCreds.UserName
   
   $Interface=Get-NetAdapter | Where-Object Name -Like "Ethernet*" | Select-Object -First 1
   $InterfaceAlias=$($Interface.Name)
 
   Node localhost
   {
-    Script AddADDSFeature {
-      SetScript = {
-        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[AddADDSFeature] Installing ADDS.."
-        Add-WindowsFeature "AD-Domain-Services" -ErrorAction SilentlyContinue   
-      }
-      GetScript =  { @{} }
-      TestScript = { $false }
-    }
     Script DownloadClassFiles
     {
         SetScript =  { 
@@ -81,6 +77,26 @@
         Force = $true
         DependsOn = "[Script]DownloadClassFiles"
     }
+    Script DownloadWAADFiles
+    {
+        SetScript =  { 
+            $file = $using:classUrl + 'WAAD.zip'
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading $file"
+            Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\WAAD.zip
+        }
+        GetScript =  { @{} }
+        TestScript = { 
+            Test-Path C:\Windows\Temp\WAAD.zip
+         }
+    }
+    Archive UnzipWAADFiles
+    {
+        Ensure = "Present"
+        Destination = "C:\WAAD"
+        Path = "C:\Windows\Temp\WAAD.zip"
+        Force = $true
+        DependsOn = "[Script]DownloadWAADFiles"
+    }
     Script ImportGPOs
     {
         SetScript =  {
@@ -88,8 +104,15 @@
           Try {
             New-GPO -Name "WAAD Default"
             New-GPO -Name "Student Computers"
-            Import-GPO -Path "C:\Class\GPOs" -BackupId '{43EAEAF9-8569-423B-A260-C426099F6C57}' -TargetName "WAAD Default"
-            Import-GPO -Path "C:\Class\GPOs" -BackupId '{D8BF6BAB-A17B-4673-8F2C-9EAFDDC5A236}'-TargetName "Student Computers"
+            New-GPO -Name "Disable Firewall"
+            New-GPO -Name "Shared Folder"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{FF68FA65-A8D6-448D-87E5-6140373380CF}' -TargetName "Disable Firewall"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{BD3497A3-0BBC-4F59-8B26-F54C6CA6FD07}' -TargetName "Shared Folder"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{AC5D004D-2C93-46AB-A1F8-2D6A64CF491F}' -TargetName "WAAD Default"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{D8BF6BAB-A17B-4673-8F2C-9EAFDDC5A236}'-TargetName "Student Computers"
+            New-GPLink -Name "Disable Firewall" -Target "OU=Domain Controllers,DC=ad,DC=waad,DC=training"
+            New-GPLink -Name "Disable Firewall" -Target "OU=Production,DC=AD,DC=WAAD,DC=TRAINING"
+            New-GPLink -Name "Shared Folder" -Target "OU=Production,DC=AD,DC=WAAD,DC=TRAINING"
             New-GPLink -Name "WAAD Default" -Target "DC=AD,DC=WAAD,DC=TRAINING"
             New-GPLink -Name "Student Computers" -Target "OU=Computers,OU=Class,DC=AD,DC=WAAD,DC=TRAINING"
           }
@@ -100,13 +123,18 @@
           }
         }
         GetScript =  { @{} }
-        TestScript = { $false }
+        TestScript = { try {Get-GPO -Name "WAAD Default2" -ErrorAction Stop | Out-null; return $true} catch { $false } }
         DependsOn = "[Archive]UnzipClassFiles","[xADOrganizationalUnit]ProductionServersOU","[xADOrganizationalUnit]ClassComputersOU"
     }
     WindowsFeature DNS 
     { 
       Ensure = "Present" 
       Name = "DNS"		
+    }
+    WindowsFeature DotNetCore 
+    {
+      Ensure = "Present" 
+      Name   = "Net-Framework-Core"
     }
     xDnsRecord Pwnbox
     {
@@ -161,7 +189,7 @@
     { 
       Ensure = "Present" 
       Name = "AD-Domain-Services"
-      DependsOn="[cDiskNoRestart]ADDataDisk", "[Script]AddADDSFeature"
+      DependsOn="[cDiskNoRestart]ADDataDisk"
     } 
 
     xADDomain FirstDS 
@@ -249,16 +277,6 @@
       Ensure = 'Present'
       DependsOn = "[xADOrganizationalUnit]ClassOU"
     }
-    xADUser StudentUser
-    {
-        DomainName = $DomainName
-        DomainAdministratorCredential = $DomainAdminCreds
-        UserName = "StudentUser"
-        Password = $DomainStudentCreds
-        Ensure = "Present"
-        Path = "OU=Users,OU=Class,DC=ad,DC=waad,DC=training"
-        DependsOn = "[xADOrganizationalUnit]ClassUsersOU"
-    }
     xADUser StudentAdmin
     {
         DomainName = $DomainName
@@ -309,27 +327,15 @@
         Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
     }
-    xADGroup LocalAdmins
+    xADUser HelperAccount
     {
-      GroupName = "LocalAdmins"
-      GroupScope = "Global"
-      Category = "Security"
-      Description = "Group for Local Admins"
-      Ensure = 'Present'
-      MembersToInclude = $BackupUserUsername
-      Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
-      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser"
-    }
-    xADGroup ClassRDPAccess
-    {
-      GroupName = "Class Remote Desktop Access"
-      GroupScope = "Global"
-      Category = "Security"
-      Description = "Group for RDP Access to objects in the Class OU"
-      Ensure = 'Present'
-      MembersToInclude = "StudentUser"
-      Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
-      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]StudentUser"
+        DomainName = $DomainName
+        DomainAdministratorCredential = $DomainAdminCreds
+        UserName = $HelperAccountUsername
+        Password = $DomainHelperAccountCreds
+        Ensure = "Present"
+        Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
+        DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
     }
     xADGroup DomainAdmins
     {
@@ -338,6 +344,7 @@
       MembersToInclude =  $ServerAdminUsername, "StudentAdmin"
       DependsOn = "[xADUser]ServerAdmin", "[xADUser]StudentAdmin"
     }
+
     xADGroup AccountingUsers
     {
       GroupName = "Accounting Users"
@@ -351,7 +358,7 @@
     }
     xADGroup HelpdeskUsers
     {
-      GroupName = "Helpdesk Users"
+      GroupName = "HelpdeskUsers"
       GroupScope = "Global"
       Category = "Security"
       Description = "The valiant frontline of IT Support"
@@ -362,12 +369,12 @@
     }
     xADGroup ServiceAccounts
     {
-      GroupName = "Service Accounts"
+      GroupName = "ServiceAccounts"
       GroupScope = "Global"
       Category = "Security"
       Description = "Robots that do our bidding"
       Ensure = 'Present'
-      MembersToInclude = $BackupUserUsername
+      MembersToInclude = $BackupUserUsername, $HelperAccountUsername
       Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
       DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser"
     }

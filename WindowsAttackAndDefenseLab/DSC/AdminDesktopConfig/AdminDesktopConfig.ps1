@@ -1,40 +1,51 @@
 configuration AdminDesktopConfig 
 { 
-  Import-DscResource -ModuleName PSDesiredStateConfiguration,xTimeZone
+  Param(
+    [Parameter(Mandatory)]
+    [string]$classUrl
+  )
+  Import-DscResource -ModuleName PSDesiredStateConfiguration
 
   Node "admindesktop" {
-    Script DownloadFiles {
+
+    Script DownloadWAADFiles {
       SetScript  = { 
-        $file = "https://waadtraining.blob.core.windows.net/class/AdminDesktop.zip"
-        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadFiles] Downloading $file"
+        $file = $using:classUrl + 'WAAD.zip'
+        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading $file"
         Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\WAAD.zip
       }
       GetScript  = { @{} }
       TestScript = { 
-        Test-Path C:\Windows\Temp\DSCFILES.zip
+        Test-Path C:\Windows\Temp\WAAD.zip
       }
     }
-    WindowsFeature DotNetCore
-    {
-        Ensure = "Present" 
-        Name = "Net-Framework-Core"
-    }
-    Archive UnzipFiles {
+    Archive UnzipWAADFiles {
       Ensure      = "Present"
-      Destination = "C:\Class"
+      Destination = "C:\WAAD"
       Path        = "C:\Windows\Temp\WAAD.zip"
       Force       = $true
-      DependsOn   = "[Script]DownloadFiles"
+      DependsOn   = "[Script]DownloadWAADFiles"
     }
-    xTimeZone SetTimezone
-    {
-        IsSingleInstance = 'Yes'
-        TimeZone         = 'Pacific Standard Time'
+    Script SetTimeZone {
+      SetScript  = { 
+        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[SetTimeZone] Running.."
+        cmd.exe /c 'tzutil /s "Eastern Standard Time"'
+      }
+      GetScript  = { @{} }
+      TestScript = { $false }
     }
-    LocalConfigurationManager 
+    WindowsFeature DotNetCore {
+      Ensure = "Present" 
+      Name   = "Net-Framework-Core"
+    }
+    WindowsFeature RemoteDesktop
     {
-        ConfigurationMode = 'ApplyOnly'
-        RebootNodeIfNeeded = $true
+        Ensure = "Present" 
+        Name = "RDS-RD-Server"
+    }
+    LocalConfigurationManager {
+      ConfigurationMode  = 'ApplyOnly'
+      RebootNodeIfNeeded = $true
     }
   } 
 }

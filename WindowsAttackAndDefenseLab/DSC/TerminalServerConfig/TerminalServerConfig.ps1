@@ -10,45 +10,50 @@ configuration TerminalServerConfig
         [String]$classUrl
     )
   
-  Import-DscResource -ModuleName PSDesiredStateConfiguration, xTimeZone
+  Import-DscResource -ModuleName PSDesiredStateConfiguration
   [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
   
   Node localhost 
   {
 
-    Script DownloadClassFiles
+    Script DownloadWAADFiles
     {
         SetScript =  { 
-            $file = $using:classUrl + 'TerminalServer.zip'
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadClassFiles] Downloading $file"
-            Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\Class.zip
+            $file = $using:classUrl + 'WAAD.zip'
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading $file"
+            Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\WAAD.zip
         }
         GetScript =  { @{} }
         TestScript = { 
-            Test-Path C:\Windows\Temp\Class.zip
+            Test-Path C:\Windows\Temp\WAAD.zip
          }
     }
-    Archive UnzipClassFiles
+    Archive UnzipWAADFiles
     {
         Ensure = "Present"
-        Destination = "C:\Class"
-        Path = "C:\Windows\Temp\Class.zip"
+        Destination = "C:\WAAD"
+        Path = "C:\Windows\Temp\WAAD.zip"
         Force = $true
-        DependsOn = "[Script]DownloadClassFiles"
+        DependsOn = "[Script]DownloadWAADFiles"
     }
-    WindowsFeature WebServer
+    WindowsFeature RemoteDesktop
     {
         Ensure = "Present" 
         Name = "RDS-RD-Server"
     }
-    Script InstallxComputerManagament
+    Script SetTimeZone
     {
-        SetScript = {
-            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
-            Install-Module xComputerManagement -Force
+        SetScript =  { 
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[SetTimeZone] Running.."
+            cmd.exe /c 'tzutil /s "Eastern Standard Time"'
         }
         GetScript =  { @{} }
         TestScript = { $false }
+    }
+    WindowsFeature DotNetCore
+    {
+        Ensure = "Present" 
+        Name = "Net-Framework-Core"
     }
     Group AddRDPAccessGroup
     {
@@ -62,14 +67,9 @@ configuration TerminalServerConfig
     {
         GroupName='Administrators'   
         Ensure= 'Present'             
-        MembersToInclude= "$DomainName\Helpdesk Users", "$DomainName\LocalAdmins"
+        MembersToInclude= "$DomainName\HelpDeskUsers", "$DomainName\ServiceAccounts"
         Credential = $DomainCreds    
         PsDscRunAsCredential = $DomainCreds
-    }
-    xTimeZone SetTimezone
-    {
-        IsSingleInstance = 'Yes'
-        TimeZone         = 'Pacific Standard Time'
     }
     LocalConfigurationManager 
     {
