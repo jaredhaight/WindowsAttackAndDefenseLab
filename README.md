@@ -28,3 +28,8 @@ The lab consists of the following servers:
 #### Pwnbox
 * Ubuntu 16.04
 * Metasploit
+
+# Deploying the Lab
+_IMPORTANT: This lab deployment was designed to work as part of the WAAD class and certain aspects of this deployment will not work out of the box as it depends on files that are not part of this repo. Issues and pull requests will not be supported._ 
+
+Most of this lab is available here in the repo. There are two aspects that are not provided though, the CLASS and WAAD folders. These folders are deployed to each Windows box as part of the DSC bootstrap. You can edit the bootstrap PS1s to either remove these deployments or modify them to work with your own folders.
