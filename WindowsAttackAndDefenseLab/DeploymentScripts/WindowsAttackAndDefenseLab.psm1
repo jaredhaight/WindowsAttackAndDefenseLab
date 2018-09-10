@@ -1,1 +1,1 @@
-Get-ChildItem .\DeploymentScripts | Where-Object { $_.Extension -eq ".ps1" } | ForEach-Object { Import-Module $_.FullName -DisableNameChecking }
+Get-ChildItem "$PSScriptRoot\*.ps1" | Where-Object { $_.Extension -eq ".ps1" } | ForEach-Object { Import-Module $_.FullName -DisableNameChecking }

@@ -1,0 +1,8 @@
+
+[ClassVersion("1.0.0.0"), FriendlyName("cChocoFeature")]
+class cChocoFeature : OMI_BaseResource
+{
+    [Key] String FeatureName;
+    [Write,ValueMap{"Present", "Absent"},Values{"Present", "Absent"}] String Ensure;
+};
+

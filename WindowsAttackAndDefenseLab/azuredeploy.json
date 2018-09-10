@@ -95,9 +95,6 @@
     "homeOU": {
       "type": "string"
     },
-    "publicIpName": {
-      "type": "string"
-    },
     "windowsImagePublisher": {
       "type": "string"
     },
@@ -164,10 +161,16 @@
     "linuxImageSku": {
       "type": "string"
     },
+    "linuxAdminUsername": {
+      "type":"string"
+    },
     "dscUrl": {
       "type": "string"
     },
     "classUrl": {
+      "type": "string"
+    },
+    "SSHKeyData": {
       "type": "string"
     }
   },
@@ -180,7 +183,10 @@
     "terminalServerNicName": "[concat(parameters('terminalServerVmName'),'-nic')]",
     "userDesktopNicName": "[concat(parameters('userDesktopVmName'),'-nic')]",
     "adminDesktopNicName": "[concat(parameters('adminDesktopVmName'),'-nic')]",
-    "domainJoinOptions": "3"
+    "homePublicIpName": "[concat(parameters('studentCode'),'-home-pip')]",
+    "linuxPublicIpName": "[concat(parameters('studentCode'),'-linux-pip')]",
+    "domainJoinOptions": "3",
+    "sshKeyPath": "[concat('/home/',parameters('linuxAdminUsername'),'/.ssh/authorized_keys')]",
   },
   "resources": [
     {
@@ -254,7 +260,7 @@
       }
     },
     {
-      "apiVersion": "2015-06-15",
+      "apiVersion": "2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
       "dependsOn": [
         "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]",
@@ -279,25 +285,8 @@
             "version": "latest"
           },
           "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('adVmName'), 'disk0.vhd')]"
-            },
-            "caching": "ReadWrite",
             "createOption": "FromImage"
-          },
-          "dataDisks": [
-            {
-              "name": "datadisk",
-              "vhd": {
-                "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('adVmName'), 'disk1.vhd')]"
-              },
-              "caching": "None",
-              "createOption": "Empty",
-              "diskSizeGB": "1000",
-              "lun": 0
-            }
-          ]
+          }
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -378,10 +367,28 @@
     },
     {
       "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('linuxPublicIpName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[concat(parameters('StudentCode'),'-linux')]"
+        }
+      },
+      "tags": {
+        "displayName": "PublicIPAddress-Pwnbox",
+        "studentCode": "[parameters('studentCode')]"
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[variables('linuxNicName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
+        
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('linuxPublicIpName'))]",
         "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
       ],
       "properties": {
@@ -391,6 +398,9 @@
             "properties": {
               "privateIPAllocationMethod": "Static",
               "privateIPAddress": "[parameters('linuxNicIPAddress')]",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('linuxPublicIpName'))]"
+              },
               "subnet": {
                 "id": "[variables('subnetId')]"
               }
@@ -411,7 +421,7 @@
       }
     },
     {
-      "apiVersion": "2015-06-15",
+      "apiVersion": "2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('linuxVmName')]",
       "location": "[resourceGroup().location]",
@@ -425,8 +435,18 @@
         },
         "osProfile": {
           "computerName": "[parameters('linuxVmName')]",
-          "adminUsername": "[parameters('studentAdminUsername')]",
-          "adminPassword": "[parameters('studentPassword')]"
+          "adminUsername": "[parameters('linuxAdminUsername')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "[variables('sshKeyPath')]",
+                  "keyData": "[parameters('sshKeyData')]"
+                }
+              ]
+            }
+          }
         },
         "storageProfile": {
           "imageReference": {
@@ -436,25 +456,8 @@
             "version": "latest"
           },
           "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('linuxVmName'), 'disk0.vhd')]"
-            },
-            "caching": "ReadWrite",
             "createOption": "FromImage"
-          },
-          "dataDisks": [
-            {
-              "name": "data-disk1",
-              "vhd": {
-                "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('linuxVmName'), 'disk1.vhd')]"
-              },
-              "caching": "None",
-              "createOption": "Empty",
-              "diskSizeGB": "1000",
-              "lun": 0
-            }
-          ]
+          }
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -497,7 +500,7 @@
     {
       "apiVersion": "2016-03-30",
       "type": "Microsoft.Network/publicIPAddresses",
-      "name": "[parameters('publicIpName')]",
+      "name": "[variables('homePublicIpName')]",
       "location": "[resourceGroup().location]",
       "properties": {
         "publicIPAllocationMethod": "Dynamic",
@@ -506,7 +509,7 @@
         }
       },
       "tags": {
-        "displayName": "PublicIPAddress",
+        "displayName": "PublicIPAddress-Home",
         "studentCode": "[parameters('studentCode')]"
       }
     },
@@ -516,7 +519,7 @@
       "name": "[variables('homeNicName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('homePublicIpName'))]",
         "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
       ],
       "properties": {
@@ -527,7 +530,7 @@
               "privateIPAllocationMethod": "Static",
               "privateIPAddress": "[parameters('homeNicIpAddress')]",
               "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName'))]"
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('homePublicIpName'))]"
               },
               "subnet": {
                 "id": "[variables('subnetId')]"
@@ -547,7 +550,7 @@
       }
     },
     {
-      "apiVersion": "2015-06-15",
+      "apiVersion": "2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('homeVmName')]",
       "location": "[resourceGroup().location]",
@@ -572,25 +575,8 @@
             "version": "latest"
           },
           "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('homeVmName'), 'disk0.vhd')]"
-            },
-            "caching": "ReadWrite",
             "createOption": "FromImage"
-          },
-          "dataDisks": [
-            {
-              "name": "data-disk1",
-              "vhd": {
-                "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('homeVmName'), 'disk1.vhd')]"
-              },
-              "caching": "None",
-              "createOption": "Empty",
-              "diskSizeGB": "1000",
-              "lun": 0
-            }
-          ]
+          }
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -705,7 +691,7 @@
       }
     },
     {
-      "apiVersion": "2015-06-15",
+      "apiVersion": "2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('terminalServerVmName')]",
       "location": "[resourceGroup().location]",
@@ -730,25 +716,8 @@
             "version": "latest"
           },
           "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('terminalServerVmName'), 'disk0.vhd')]"
-            },
-            "caching": "ReadWrite",
             "createOption": "FromImage"
-          },
-          "dataDisks": [
-            {
-              "name": "data-disk1",
-              "vhd": {
-                "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('terminalServerVmName'), 'disk1.vhd')]"
-              },
-              "caching": "None",
-              "createOption": "Empty",
-              "diskSizeGB": "1000",
-              "lun": 0
-            }
-          ]
+          }
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -863,7 +832,7 @@
       }
     },
     {
-      "apiVersion": "2015-06-15",
+      "apiVersion": "2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('userDesktopVmName')]",
       "location": "[resourceGroup().location]",
@@ -888,25 +857,8 @@
             "version": "latest"
           },
           "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('userDesktopVmName'), 'disk0.vhd')]"
-            },
-            "caching": "ReadWrite",
             "createOption": "FromImage"
-          },
-          "dataDisks": [
-            {
-              "name": "data-disk1",
-              "vhd": {
-                "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('userDesktopVmName'), 'disk1.vhd')]"
-              },
-              "caching": "None",
-              "createOption": "Empty",
-              "diskSizeGB": "1000",
-              "lun": 0
-            }
-          ]
+          }
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -1025,7 +977,7 @@
       }
     },
     {
-      "apiVersion": "2015-06-15",
+      "apiVersion": "2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('adminDesktopVmName')]",
       "location": "[resourceGroup().location]",
@@ -1050,25 +1002,8 @@
             "version": "latest"
           },
           "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('adminDesktopVmName'), 'disk0.vhd')]"
-            },
-            "caching": "ReadWrite",
             "createOption": "FromImage"
-          },
-          "dataDisks": [
-            {
-              "name": "data-disk1",
-              "vhd": {
-                "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',parameters('adminDesktopVmName'), 'disk1.vhd')]"
-              },
-              "caching": "None",
-              "createOption": "Empty",
-              "diskSizeGB": "1000",
-              "lun": 0
-            }
-          ]
+          }
         },
         "networkProfile": {
           "networkInterfaces": [

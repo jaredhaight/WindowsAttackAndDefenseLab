@@ -1,7 +1,13 @@
 {
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
-  "parameters": {    
+  "parameters": {  
+    "LinuxAdminUsername": {
+      "value": "Username123"
+    },  
+    "SSHKeyData": {
+      "value": "ssh-rsa fooooooooooo username"
+    },
     "BackupUsername":{
       "value": "Username123"
     },

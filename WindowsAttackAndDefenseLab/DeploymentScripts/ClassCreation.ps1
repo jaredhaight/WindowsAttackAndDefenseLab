@@ -1,4 +1,4 @@
-workflow New-WindowsAttackAndDefenseLab {
+workflow New-WaadClass {
   [CmdletBinding()]
   Param( 
     [Parameter(Mandatory = $True, Position = 1)]
@@ -64,12 +64,11 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   $studentSubnetName = $studentCode + "subnet"
   $virtualNetworkName = $studentCode + "vnet"
   $virtualNetworkAddressRange = "10.0.0.0/16"
-  $publicIpName = $studentCode + "-pip"
   $localAdminUsername = "localadmin"
   $studentAdminUsername = "studentadmin"
   $storageAccountName = $studentCode + "storage"    # Lowercase required
-  $TemplateFile = 'C:\Users\jared\repos\WindowsAttackAndDefenseLab\WindowsAttackAndDefenseLab\azuredeploy.json'
-  $TemplateParameterFile = 'C:\Users\jared\repos\WindowsAttackAndDefenseLab\WindowsAttackAndDefenseLab\azuredeploy.parameters.json'
+  $TemplateFile = "$PSScriptRoot\..\azuredeploy.json"
+  $TemplateParameterFile = "$PSScriptRoot\..\azuredeploy.parameters.json"
   $networkSecurityGroup = "waad.training-nsg-" + $region
   $subscriptionId = (Get-AzureRmContext).Subscription.SubscriptionId
   $windowsImagePublisher = "MicrosoftWindowsServer"
@@ -77,14 +76,15 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   $windowsImageSku = "2016-Datacenter"  
   $dscUrl = "https://waadtraining.blob.core.windows.net/bootstraps/"
   $classUrl = "https://waadtraining.blob.core.windows.net/class/"
-
+  $smallVmSize = "Standard_B2ms"
+  $largeVmSize = "Standard_B4ms"
 
   # DC Variables
   $adAdminUserName = "WaadAdmin"
   $domainName = "ad." + $dnsZone
   $adVMName = "dc01"
   $adNicIPAddress = "10.0.0.4"
-  $adVmSize = "Standard_A1_v2"
+  $adVmSize = "Standard_B2ms"
   if ($Day -eq "One") {
     $adDscFile = "Day01.ps1"
   }
@@ -99,41 +99,41 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   # Home Vars
   $homeVMName = "home" # Has to be lowercase
   $homeNicIpAddress = "10.0.0.10"
-  $homeVMSize = "Standard_A2_v2"
+  $homeVMSize = $largeVmSize
   $homeOU = "OU=Computers,OU=Class,DC=ad,DC=waad,DC=training"
 
   # Terminal Server Vars
   $terminalServerVMName = "terminalserver" # Has to be lowercase
   $terminalServerNicIpAddress = "10.0.0.11"
-  $terminalServerVMSize = "Standard_A1_v2"
+  $terminalServerVMSize = $smallVmSize
   $terminalServerOU = "OU=Servers,OU=Production,DC=ad,DC=waad,DC=training"
 
   # User Desktop Vars
   $userDesktopVMName = "userdesktop" # Has to be lowercase
   $userDesktopNicIpAddress = "10.0.0.12"
-  $userDesktopVMSize = "Standard_A2_v2"
+  $userDesktopVMSize = $smallVmSize
   $userDesktopOU = "OU=Computers,OU=Production,DC=ad,DC=waad,DC=training"
 
   # Admin Desktop Vars
   $adminDesktopVMName = "admindesktop" # Has to be lowercase
   $adminDesktopNicIpAddress = "10.0.0.13"
-  $adminDesktopVMSize = "Standard_A1_v2"
+  $adminDesktopVMSize = $smallVmSize
   $adminDesktopOU = "OU=Computers,OU=Production,DC=ad,DC=waad,DC=training"
 
   # Linux Vars
   $linuxVMName = "pwnbox" # Has to be lowercase
   $linuxNicIpAddress = "10.0.0.101"
-  $linuxVMSize = "Standard_A1_v2"
+  $linuxVMSize = $smallVmSize
   $linuxImagePublisher = "Canonical"
   $linuxImageOffer = "UbuntuServer"
-  $linuxImageSku = "16.04.0-LTS"
+  $linuxImageSku = "18.04-DAILY-LTS"
 
   # Create the new resource group. Runs quickly.
   try {
-    Get-AzureRmResourceGroup -Name $resourceGroupName -Location $location -ErrorAction Stop
+    Get-AzureRmResourceGroup -Name $resourceGroupName -Location $location -ErrorAction Stop 
   }
   catch {
-    New-AzureRmResourceGroup -Name $resourceGroupName -Location $location
+    New-AzureRmResourceGroup -Name $resourceGroupName -Location $location -Tag @{"StudentCode" = $StudentCode; "Region" = $Region}
   }
 
   $TemplateFileParams = (Get-Content $TemplateParameterFile) -Join "`n" | ConvertFrom-Json
@@ -144,7 +144,6 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     studentSubnetName          = $studentSubnetName
     virtualNetworkName         = $virtualNetworkName
     virtualNetworkAddressRange = $virtualNetworkAddressRange
-    publicIpName               = $publicIpName
     localAdminUsername         = $localAdminUsername
     studentAdminUsername       = $studentAdminUsername
     studentPassword            = $studentPassword
@@ -194,8 +193,10 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     HelpDeskUserPassword       = $TemplateFileParams.Parameters.HelpDeskUserPassword.value
     ServerAdminUsername        = $TemplateFileParams.Parameters.ServerAdminUsername.value
     ServerAdminPassword        = $TemplateFileParams.Parameters.ServerAdminPassword.value
-    HelperAccountUsername = $TemplateFileParams.Parameters.HelperAccountUsername.value
-    HelperAccountPassword = $TemplateFileParams.Parameters.HelperAccountPassword.value
+    HelperAccountUsername      = $TemplateFileParams.Parameters.HelperAccountUsername.value
+    HelperAccountPassword      = $TemplateFileParams.Parameters.HelperAccountPassword.value
+    LinuxAdminUsername         = $TemplateFileParams.Parameters.LinuxAdminUsername.value
+    SSHKeyData                 = $TemplateFileParams.Parameters.SSHKeyData.value
   }
 
   if ($Test) {
@@ -228,16 +229,17 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     
     $ipInfo = ( 
       @{
-        "publicIpName" = $publicIpName
-        "vmName"       = $studentCode
+        "vmName" = $studentCode
+        "region" = $Region
       }
     )
 
     if ($deployed) {
       forEach ($item in $ipInfo) {
-        $pip = Get-AzureRmPublicIpAddress -Name $item.publicIpName -ResourceGroupName $resourceGroupName
-        $record = (New-AzureRmDnsRecordConfig -IPv4Address $pip.IpAddress)
-        $rs = New-AzureRmDnsRecordSet -Name $item.vmName -RecordType "A" -ZoneName $dnsZone -ResourceGroupName $masterResourceGroup -Ttl 10 -DnsRecords $record
+        $record = (New-AzureRmDnsRecordConfig -Cname "$StudentCode.$Region.cloudapp.azure.com")
+        New-AzureRmDnsRecordSet -Name $StudentCode -RecordType "CNAME" -ZoneName $dnsZone -ResourceGroupName $masterResourceGroup -Ttl 10 -DnsRecords $record
+        $record = (New-AzureRmDnsRecordConfig -Cname "$StudentCode-linux.$Region.cloudapp.azure.com")
+        New-AzureRmDnsRecordSet -Name "$StudentCode-linux" -RecordType "CNAME" -ZoneName $dnsZone -ResourceGroupName $masterResourceGroup -Ttl 10 -DnsRecords $record
       }
     }
   }

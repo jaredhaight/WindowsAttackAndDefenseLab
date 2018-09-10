@@ -1,4 +1,3 @@
-Import-Module Azure
 Import-Module AzureRM
   
 workflow Remove-AllAzureRmResourceGroups {

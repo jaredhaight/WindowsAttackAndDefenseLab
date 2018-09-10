@@ -12,7 +12,7 @@ configuration HomeConfig
   
   Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[Start] Got FileURL: $classUrl"
   [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
-  Import-DscResource -ModuleName PSDesiredStateConfiguration
+  Import-DscResource -ModuleName PSDesiredStateConfiguration, cChoco
 
   Node localhost 
   {
@@ -102,6 +102,20 @@ configuration HomeConfig
         TestScript = { $false }
         DependsOn = "[Archive]UnzipClassFiles"
     }
+    Script CreateCobaltStrikeShortcut
+    {
+        SetScript = {
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[CreateCobaltStrikeShortcut] Creating Shortcut"
+            $WshShell = New-Object -comObject WScript.Shell
+            $Shortcut = $WshShell.CreateShortcut("C:\Users\Public\Desktop\Cobalt Strike.lnk")
+            $Shortcut.TargetPath = "C:\Class\cobaltstrike\cobaltstrike.exe"
+            $Shortcut.WorkingDirectory = "C:\Class\cobaltstrike\"
+            $Shortcut.Save()
+        }
+        GetScript = { @{} }
+        TestScript = { $false }
+        DependsOn = "[Archive]UnzipClassFiles"
+    }
     Script SetTimeZone
     {
         SetScript =  { 
@@ -110,6 +124,45 @@ configuration HomeConfig
         }
         GetScript =  { @{} }
         TestScript = { $false }
+    }      
+    cChocoInstaller installChoco
+    {
+      InstallDir = "c:\choco"
+    }
+    cChocoPackageInstaller installChrome
+    {
+      Name        = "googlechrome"
+      DependsOn   = "[cChocoInstaller]installChoco"
+      #This will automatically try to upgrade if available, only if a version is not explicitly specified.
+      AutoUpgrade = $True
+    }
+    cChocoPackageInstaller installJre
+    {
+        Name        = "jre8"
+        DependsOn   = "[cChocoInstaller]installChoco"
+        #This will automatically try to upgrade if available, only if a version is not explicitly specified.
+        AutoUpgrade = $True
+    }
+    cChocoPackageInstaller installVsCode
+    {
+        Name        = "vscode"
+        DependsOn   = "[cChocoInstaller]installChoco"
+        #This will automatically try to upgrade if available, only if a version is not explicitly specified.
+        AutoUpgrade = $True
+    }
+    cChocoPackageInstaller installSysinternals
+    {
+        Name        = "sysinternals"
+        DependsOn   = "[cChocoInstaller]installChoco"
+        #This will automatically try to upgrade if available, only if a version is not explicitly specified.
+        AutoUpgrade = $True
+    }
+    cChocoPackageInstaller neo4j-community
+    {
+        Name        = "neo4j-community"
+        DependsOn   = "[cChocoInstaller]installChoco"
+        #This will automatically try to upgrade if available, only if a version is not explicitly specified.
+        AutoUpgrade = $True
     }
     LocalConfigurationManager 
     {

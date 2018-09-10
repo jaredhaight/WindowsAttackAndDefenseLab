@@ -1,6 +1,27 @@
-﻿Import-Module Azure
-Import-Module AzureRM
-  
+﻿Import-Module AzureRM
+function New-ClassDnsRecordSets {
+  [CmdletBinding()] 
+  Param(
+    [Parameter(Mandatory=$true)]
+    [pscredential]$Credentials,
+    [string]$ResourceGroupName='waad.training-master',
+    [string]$ZoneName='waad.training'
+  )
+  if ((Get-AzureRmContext).Account -eq $null) {
+    Connect-AzureRmAccount -Credential $Credentials
+  }
+
+  $vms = Get-AzureRmResource -ResourceType "Microsoft.Compute/VirtualMachines" -Tag @{"displayName"="ClientVM"}
+
+  ForEach ($vm in $vms) {
+    $AzureHostname = "$($vm.Name).$($vm.Location).cloudapp.azure.com"
+    $CnameRecord = New-AzureRmDnsRecordConfig -Cname $AzureHostname
+    Write-Output "[i] Mapping $AzureHostname to $($vm.Name).$ZoneName"
+    New-AzureRmDnsRecordSet -Name $vm.Name -RecordType "CNAME" -ZoneName $ZoneName -ResourceGroupName $ResourceGroupName -Ttl 10 -DnsRecords $CnameRecord | Out-Null
+  }
+}
+
+
 workflow Remove-AllAzureRmDnsRecordSets {
   
   [CmdletBinding()] 

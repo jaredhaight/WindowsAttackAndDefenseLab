@@ -1,0 +1,48 @@
+#---------------------------------#
+#      environment configuration  #
+#---------------------------------#
+version: 2.3.1.{build}
+os: WMF 5
+install:
+  - ps: . .\AppVeyor\AppVeyorInstall.ps1
+
+environment:
+  nugetKey:
+    secure: cTU7bDH5E95cI/Zj36CfMrrgnnW/fmEd1S9+cqmBlV3P0GMUnluLcydTWgDK7Usu
+  github_access_token:
+    secure: Xk7jTkdE82qskQy9WPZK0zSafSjT6gK1SYxH8m4Aa8muCMQ4ACkkztJ3toh9DFlS
+  ModuleName: cChoco
+#---------------------------------#
+#      build configuration        #
+#---------------------------------#
+build_script:
+  - ps: . .\AppVeyor\AppVeyorBuild.ps1
+
+#---------------------------------#
+#      test configuration         #
+#---------------------------------#
+test_script:
+  - ps: . .\AppVeyor\AppVeyorTest.ps1
+
+#---------------------------------#
+#      deployment configuration   #
+#---------------------------------#
+deploy_script:
+  - ps: . .\AppVeyor\AppveyorDeploy.ps1
+
+#---------------------------------#
+#    notification configuration   #
+#---------------------------------#
+notifications:
+- provider: Email
+  to:
+  - chocolatey-build-status@googlegroups.com
+  subject: AppVeyor - cChoco DSC Resource Build Notification
+  on_build_success: false
+  on_build_failure: true
+  on_build_status_changed: true
+- provider: Webhook
+  url: https://webhooks.gitter.im/e/f764ee3ccd6ed7348224
+  on_build_success: true
+  on_build_failure: true
+  on_build_status_changed: true

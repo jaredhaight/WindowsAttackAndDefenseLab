@@ -1,0 +1,3 @@
+*.mof
+!*.schema.mof
+TestsResults.xml

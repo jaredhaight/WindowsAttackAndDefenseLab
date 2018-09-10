@@ -172,24 +172,10 @@
       DependsOn = "[WindowsFeature]DNS"
     }
 
-    xWaitforDisk Disk2
-    {
-      DiskNumber = 2
-      RetryIntervalSec =$RetryIntervalSec
-      RetryCount = $RetryCount
-    }
-
-    cDiskNoRestart ADDataDisk
-    {
-      DiskNumber = 2
-      DriveLetter = "F"
-    }
-
     WindowsFeature ADDSInstall 
     { 
       Ensure = "Present" 
       Name = "AD-Domain-Services"
-      DependsOn="[cDiskNoRestart]ADDataDisk"
     } 
 
     xADDomain FirstDS 
