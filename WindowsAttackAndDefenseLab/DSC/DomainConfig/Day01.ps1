@@ -109,7 +109,7 @@
             Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{FF68FA65-A8D6-448D-87E5-6140373380CF}' -TargetName "Disable Firewall"
             Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{BD3497A3-0BBC-4F59-8B26-F54C6CA6FD07}' -TargetName "Shared Folder"
             Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{AC5D004D-2C93-46AB-A1F8-2D6A64CF491F}' -TargetName "WAAD Default"
-            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{D8BF6BAB-A17B-4673-8F2C-9EAFDDC5A236}'-TargetName "Student Computers"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{9FF1FF6F-FB61-4961-A30B-77148F45B36B}'-TargetName "Student Computers"
             New-GPLink -Name "Disable Firewall" -Target "OU=Domain Controllers,DC=ad,DC=waad,DC=training"
             New-GPLink -Name "Disable Firewall" -Target "OU=Production,DC=AD,DC=WAAD,DC=TRAINING"
             New-GPLink -Name "Shared Folder" -Target "OU=Production,DC=AD,DC=WAAD,DC=TRAINING"

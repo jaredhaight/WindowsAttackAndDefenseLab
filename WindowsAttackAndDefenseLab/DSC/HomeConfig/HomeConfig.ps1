@@ -56,6 +56,12 @@ configuration HomeConfig
         Ensure = "Present" 
         Name = "RDS-RD-Server"
     }
+    WindowsFeature NetFramework35
+    {
+        Ensure = "Present" 
+        Name = "NET-Framework-Core"
+        Source = "C:\Windows\WinSxS"
+    }
     Script DownloadClassFiles
     {
         SetScript =  { 
@@ -94,8 +100,8 @@ configuration HomeConfig
             Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[CreatePickerShortcut] Creating Shortcut"
             $WshShell = New-Object -comObject WScript.Shell
             $Shortcut = $WshShell.CreateShortcut("C:\Users\Public\Desktop\Exercise Picker.lnk")
-            $Shortcut.TargetPath = "C:\Class\ExercisePicker\ExercisePicker.exe"
-            $Shortcut.WorkingDirectory = "C:\Class\ExercisePicker\"
+            $Shortcut.TargetPath = "C:\Class\Applications\ExercisePicker\ExercisePicker.exe"
+            $Shortcut.WorkingDirectory = "C:\Class\Applications\ExercisePicker\"
             $Shortcut.Save()
         }
         GetScript = { @{} }
@@ -108,8 +114,23 @@ configuration HomeConfig
             Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[CreateCobaltStrikeShortcut] Creating Shortcut"
             $WshShell = New-Object -comObject WScript.Shell
             $Shortcut = $WshShell.CreateShortcut("C:\Users\Public\Desktop\Cobalt Strike.lnk")
-            $Shortcut.TargetPath = "C:\Class\cobaltstrike\cobaltstrike.exe"
-            $Shortcut.WorkingDirectory = "C:\Class\cobaltstrike\"
+            $Shortcut.TargetPath = "C:\Class\Applications\cobaltstrike\cobaltstrike.exe"
+            $Shortcut.WorkingDirectory = "C:\Class\Applications\cobaltstrike\"
+            $Shortcut.Save()
+        }
+        GetScript = { @{} }
+        TestScript = { $false }
+        DependsOn = "[Archive]UnzipClassFiles"
+    }
+    
+    Script CreateBloodhoundShortcut
+    {
+        SetScript = {
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[CreateBloodhoundShortcut] Creating Shortcut"
+            $WshShell = New-Object -comObject WScript.Shell
+            $Shortcut = $WshShell.CreateShortcut("C:\Users\Public\Desktop\Bloodhound.lnk")
+            $Shortcut.TargetPath = "C:\Class\Applications\BloodHound-win32-x64\BloodHound.exe"
+            $Shortcut.WorkingDirectory = "C:\Class\Applications\BloodHound-win32-x64\"
             $Shortcut.Save()
         }
         GetScript = { @{} }
@@ -160,9 +181,18 @@ configuration HomeConfig
     cChocoPackageInstaller neo4j-community
     {
         Name        = "neo4j-community"
-        DependsOn   = "[cChocoInstaller]installChoco"
+        DependsOn   = "[cChocoPackageInstaller]installJre"
         #This will automatically try to upgrade if available, only if a version is not explicitly specified.
         AutoUpgrade = $True
+    }
+    script installNeo4jService
+    {
+        SetScript =  { 
+            cmd.exe /c "C:\tools\neo4j-community\neo4j-community-3.4.7\bin\neo4j.bat start"
+        }
+        GetScript =  { @{} }
+        TestScript = { $false }
+        DependsOn = "[cChocoPackageInstaller]neo4j-community"
     }
     LocalConfigurationManager 
     {

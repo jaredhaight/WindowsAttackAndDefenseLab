@@ -1,0 +1,27 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {  
+    "VmName": {
+      "value": "TerminalServer"
+    },
+    "ipAddress": {
+      "value": "10.0.0.11"
+    },
+    "VmSize": {
+      "value": "Standard_B2ms"
+    },
+    "OU": {
+      "value": "OU=Computers,OU=Production,DC=ad,DC=waad,DC=training"
+    },
+    "ImageProvider": {
+      "value": "MicrosoftWindowsServer"
+    },
+    "ImageOffer": {
+      "value": "WindowsServer"
+    },
+    "Sku": {
+      "value": "2012-R2-Datacenter"
+    }
+  }
+}

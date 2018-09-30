@@ -17,8 +17,8 @@ workflow Remove-AllAzureRmResourceGroups {
   if ($resourceGroups.Count -gt 0) {
     forEach -parallel -throttle 30 ($resourceGroup in $resourceGroups) {
         $resourceGroupName = $resourceGroup.ResourceGroupName.toString()
-        if ($resourceGroupName -notlike "*master") {
-            Add-AzureRmAccount -Credential $credentials
+        if ($resourceGroupName -notlike "*master" -and $resourceGroupName -notlike "cupcake*" -and $resourceGroupName -notlike "jah*") {
+            $conn = Add-AzureRmAccount -Credential $credentials
             Write-Output "[*] Removing $resourceGroupName.."
             Remove-AzureRmResourceGroup -Name $resourceGroupName -Force
         }

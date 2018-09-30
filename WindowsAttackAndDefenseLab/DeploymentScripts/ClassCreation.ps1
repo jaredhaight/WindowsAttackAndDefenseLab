@@ -11,15 +11,11 @@ workflow New-WaadClass {
   ) 
 
   $studentData = Import-CSV $csvSource
-  foreach -parallel -throttle 30 ($student in $studentData) {
+  foreach -parallel -throttle 45 ($student in $studentData) {
     $studentPassword = $student.password
     $studentCode = $student.code.toString()
     $studentNumber = $student.id
-    $region = 'eastus2'
-     
-    if ($studentNumber % 2 -eq 0) {
-      $region = 'westus2'
-    }
+    $region = $student.Region
     Write-Output "$studentNumber | $studentCode | $studentPassword | $region"
     Invoke-CreateWindowsAttackAndDefenseLab -credentials $credential -studentCode $studentCode -studentPassword $studentPassword -region $region -place $studentNumber -total $studentData.count -Day $day
   }
@@ -67,8 +63,8 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   $localAdminUsername = "localadmin"
   $studentAdminUsername = "studentadmin"
   $storageAccountName = $studentCode + "storage"    # Lowercase required
-  $TemplateFile = "$PSScriptRoot\..\azuredeploy.json"
-  $TemplateParameterFile = "$PSScriptRoot\..\azuredeploy.parameters.json"
+  $TemplateFile = "C:\Users\Jared\source\WindowsAttackAndDefenseLab\WindowsAttackAndDefenseLab\azuredeploy.json"
+  $TemplateParameterFile = "C:\Users\Jared\source\WindowsAttackAndDefenseLab\WindowsAttackAndDefenseLab\azuredeploy.parameters.json"
   $networkSecurityGroup = "waad.training-nsg-" + $region
   $subscriptionId = (Get-AzureRmContext).Subscription.SubscriptionId
   $windowsImagePublisher = "MicrosoftWindowsServer"
@@ -76,7 +72,7 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   $windowsImageSku = "2016-Datacenter"  
   $dscUrl = "https://waadtraining.blob.core.windows.net/bootstraps/"
   $classUrl = "https://waadtraining.blob.core.windows.net/class/"
-  $smallVmSize = "Standard_B2ms"
+  $smallVmSize = "Standard_B2s"
   $largeVmSize = "Standard_B4ms"
 
   # DC Variables
@@ -198,6 +194,9 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     LinuxAdminUsername         = $TemplateFileParams.Parameters.LinuxAdminUsername.value
     SSHKeyData                 = $TemplateFileParams.Parameters.SSHKeyData.value
   }
+  $sleep = Get-Random -Minimum 1 -Maximum 8
+  Write-Host "Sleeping for $sleep seconds"
+  Start-Sleep -Seconds $sleep
 
   if ($Test) {
     $SplatParams = @{
@@ -216,7 +215,7 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
       Name                    = $studentCode + "-template"
     }
     try {
-      New-AzureRmResourceGroupDeployment -Verbose -ErrorAction Stop @SplatParams
+      Start-Job -Name $StudentCode -ScriptBlock {New-AzureRmResourceGroupDeployment -Verbose -ErrorAction Stop @SplatParams}
       $deployed = $true
     }
     catch {

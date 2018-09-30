@@ -1,0 +1,199 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "subscriptionId": {
+      "type": "string"
+    },
+    "rgName": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "vnetId": {
+      "type": "string"
+    },
+    "studentCode": {
+      "type": "string"
+    },
+    "studentSubnetName": {
+      "type": "string"
+    },
+    "virtualNetworkName": {
+      "type": "string"
+    },
+    "localAdminusername": {
+      "type": "string"
+    },
+    "adAdminUsername": {
+      "type": "string"
+    },
+    "studentPassword": {
+      "type": "string"
+    },
+    "domainName": {
+      "type": "string"
+    },
+    "adNicIpAddress": {
+      "type": "string"
+    },
+    "imagePublisher": {
+      "type": "string"
+    },
+    "imageOffer": {
+      "type": "string"
+    },
+    "sku": {
+      "type": "string"
+    },
+    "vmName": {
+      "type": "string"
+    },
+    "ipAddress": {
+      "type": "string"
+    },
+    "vmSize": {
+      "type": "string"
+    },
+    "vmOU": {
+      "type": "string"
+    },
+    "dscUrl": {
+      "type": "string"
+    },
+    "classUrl": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "vnetID": "[resourceId(parameters('rgName'), 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
+    "subnetId": "[concat(variables('vnetID'),'/subnets/', parameters('studentSubnetName'))]",
+    "nicName": "[concat(parameters('vmName'),'-nic')]",
+    "domainJoinOptions": "3"
+  },
+  "resources": [
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('nicName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[parameters('ipAddress')]",
+              "subnet": {
+                "id": "[variables('subnetId')]"
+              }
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": [
+            "[parameters('adNicIpAddress')]"
+          ]
+        }
+      },
+      "tags": {
+        "displayName": "[concat(parameters('vmName'), 'Nic')",
+        "studentCode": "[parameters('studentCode')]"
+      }
+    },
+    {
+      "apiVersion": "2017-03-30",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[toLower(parameters('vmName'))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('vmName')]",
+          "adminUsername": "[parameters('localAdminUsername')]",
+          "adminPassword": "[parameters('studentPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[parameters('imagePublisher')]",
+            "offer": "[parameters('imageOffer')]",
+            "sku": "[parameters('sku')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+            }
+          ]
+        }
+      },
+      "tags": {
+        "displayName": "[concat(parameters('vmName'), 'Vm')",
+        "studentCode": "[parameters('studentCode')]"
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('vmName'),'/joindomain')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]",
+      ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "JsonADDomainExtension",
+        "typeHandlerVersion": "1.3",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "Name": "[parameters('domainName')]",
+          "OUPath": "[parameters('vmOU')]",
+          "User": "[concat(parameters('domainName'), '\\', parameters('adAdminUserName'))]",
+          "Restart": "true",
+          "Options": "[variables('domainJoinOptions')]"
+        },
+        "protectedsettings": {
+          "Password": "[parameters('studentPassword')]"
+        }
+      },
+      "tags": {
+        "displayName": "[concat(parameters('vmName'), 'DomainJoin')",
+        "studentCode": "[parameters('studentCode')]"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('vmName'),'/dscServerConfig')]",
+      "apiVersion": "2015-06-15",
+      "location": "[parameters('location')]",      
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('vmName'),'joinDomain')]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.19",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "modulesUrl": "[concat(parameters('dscUrl'), parameters('vmName'), 'Config.zip')]",
+          "configurationFunction": "[concat(parameters('vmName'),'Config.ps1\\', parameters('vmName'), 'Config')]",
+          "Properties": { 
+            "classUrl": "[parameters('classUrl')]"
+          }
+        }
+      },
+      "tags": {
+        "displayName": "[concat(parameters('vmName'), 'Dsc')",
+        "studentCode": "[parameters('studentCode')]"
+      }
+    }
+  ]
+}
