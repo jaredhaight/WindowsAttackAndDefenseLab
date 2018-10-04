@@ -21,7 +21,7 @@ workflow Add-ClassAccessRule {
     'waad.training-nsg-westus2'
   )
 
-  forEach -Parallel ($nsg in $NetworkSecurityGroups) {
+  forEach -Parallel -Throttle 8 ($nsg in $NetworkSecurityGroups) {
     Add-AccessRule -Credentials $Credentials -SourceIpAddress $SourceIpAddress -Port $Port -ResourceGroup $ResourceGroup -NetworkSecurityGroupName $nsg
   }
 }
@@ -40,12 +40,13 @@ function Add-AccessRule {
     [string]$ResourceGroup = "waad.training-master",
     [string]$NetworkSecurityGroupName
   )
+  $sleep = Get-Random -Minimum 1 -Maximum 3
 
+  Write-Output "[*] Sleeping for $sleep seconds"
+  Start-Sleep -Seconds $sleep 
   # Check if logged in to Azure
-  if ((Get-AzureRmContext).Account -eq $null) {
-    Connect-AzureRmAccount -Credential $Credentials
-  }
-
+  Connect-AzureRmAccount -Credential $Credentials -OutVariable $null
+  
   Write-Output "[*] Getting NSG: $NetworkSecurityGroupName"
   try {
     $nsg = Get-AzureRmNetworkSecurityGroup -Name $NetworkSecurityGroupName -ResourceGroupName $ResourceGroup -OutVariable $null

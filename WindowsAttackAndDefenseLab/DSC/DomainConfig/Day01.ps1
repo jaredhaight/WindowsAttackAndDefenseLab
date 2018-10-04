@@ -330,7 +330,13 @@
       MembersToInclude =  $ServerAdminUsername, "StudentAdmin"
       DependsOn = "[xADUser]ServerAdmin", "[xADUser]StudentAdmin"
     }
-
+    xADGroup SchemaAdmins
+    {
+      GroupName = "Schema Admins"
+      Ensure = 'Present'
+      MembersToInclude = "StudentAdmin"
+      DependsOn = "[xADUser]StudentAdmin"
+    }
     xADGroup AccountingUsers
     {
       GroupName = "Accounting Users"

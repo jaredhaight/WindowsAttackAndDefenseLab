@@ -215,7 +215,7 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
       Name                    = $studentCode + "-template"
     }
     try {
-      Start-Job -Name $StudentCode -ScriptBlock {New-AzureRmResourceGroupDeployment -Verbose -ErrorAction Stop @SplatParams}
+      New-AzureRmResourceGroupDeployment -Verbose -ErrorAction Stop @SplatParams
       $deployed = $true
     }
     catch {

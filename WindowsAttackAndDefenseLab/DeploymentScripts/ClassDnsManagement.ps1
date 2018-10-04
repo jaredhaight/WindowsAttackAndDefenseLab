@@ -11,13 +11,14 @@ function New-ClassDnsRecordSets {
     Connect-AzureRmAccount -Credential $Credentials
   }
 
-  $vms = Get-AzureRmResource -ResourceType "Microsoft.Compute/VirtualMachines" -Tag @{"displayName"="ClientVM"}
+  $vms = Get-AzureRmResource -ResourceType "Microsoft.Compute/VirtualMachines" -Tag @{"displayName"="homeVM"}
 
   ForEach ($vm in $vms) {
-    $AzureHostname = "$($vm.Name).$($vm.Location).cloudapp.azure.com"
+    $studentCode = $vm.Tags['studentCode']
+    $AzureHostname = "$studentCode.$($vm.Location).cloudapp.azure.com"
     $CnameRecord = New-AzureRmDnsRecordConfig -Cname $AzureHostname
-    Write-Output "[i] Mapping $AzureHostname to $($vm.Name).$ZoneName"
-    New-AzureRmDnsRecordSet -Name $vm.Name -RecordType "CNAME" -ZoneName $ZoneName -ResourceGroupName $ResourceGroupName -Ttl 10 -DnsRecords $CnameRecord | Out-Null
+    Write-Output "[i] Mapping $AzureHostname to $studentCode.$ZoneName"
+    New-AzureRmDnsRecordSet -Name $studentCode -RecordType "CNAME" -ZoneName $ZoneName -ResourceGroupName $ResourceGroupName -Ttl 10 -DnsRecords $CnameRecord | Out-Null
   }
 }
 
