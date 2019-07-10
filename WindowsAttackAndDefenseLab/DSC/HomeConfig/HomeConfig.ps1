@@ -188,7 +188,7 @@ configuration HomeConfig
     script installNeo4jService
     {
         SetScript =  { 
-            cmd.exe /c "C:\tools\neo4j-community\neo4j-community-3.4.7\bin\neo4j.bat start"
+            cmd.exe /c "C:\tools\neo4j-community\neo4j-community-3.5.1\bin\neo4j.bat start"
         }
         GetScript =  { @{} }
         TestScript = { $false }
