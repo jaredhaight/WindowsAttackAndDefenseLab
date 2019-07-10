@@ -3,7 +3,6 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   Param(  
     [Parameter(Mandatory = $True)]
     [string]$StudentCode,
-    [string]$StudentPassword = "OMG!DerbyCon2019",
     [string]$TemplateFile = "./azuredeploy.json",
     [string]$TemplateParameterFile = "./azuredeploy.parameters.json",
     [string]$Region = "eastus2",
@@ -41,7 +40,7 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   $DeploymentParameters = @{
     StudentCode            = $StudentCode
     subscriptionId         = $subscriptionId    
-    studentPassword        = $studentPassword
+    studentPassword        = "$($TemplateFileParams.Parameters.StudentPassword.value)$StudentCode"
     BackupUserName         = $TemplateFileParams.Parameters.BackupUsername.value
     BackupUserPassword     = $TemplateFileParams.Parameters.BackupUserPassword.value
     AccountingUserName     = $TemplateFileParams.Parameters.AccountingUserName.value
