@@ -5,26 +5,20 @@
     "subscriptionId": {
       "type": "string"
     },
-    "masterResourceGroup": {
-      "type": "string"
-    },
     "studentCode": {
       "type": "string"
     },
-    "studentSubnetName": {
-      "type": "string"
-    },
-    "virtualNetworkName": {
-      "type": "string"
-    },
     "virtualNetworkAddressRange": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "10.0.0.0/16"
     },
     "localAdminusername": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "localadmin"
     },
     "studentAdminUsername": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "studentadmin"
     },
     "studentPassword": {
       "type": "securestring"
@@ -59,124 +53,152 @@
     "HelperAccountPassword": {
       "type": "securestring"
     },
-    "storageAccountName": {
-      "type": "string"
-    },
-    "networkSecurityGroup": {
-      "type": "string"
-    },
     "adAdminUsername": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "WaadAdmin"
     },
     "domainName": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "ad.waad.training"
     },
     "adVMName": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "dc01"
     },
     "adNicIpAddress": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "10.0.0.4"
     },
     "adVmSize": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "Standard_B2ms"
     },
     "adDscFile":{
-      "type": "string"
+      "type": "string",
+      "defaultValue": "Day01.ps1"
     },
     "homeVmName": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "home"
     },
     "homeNicIpAddress": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "10.0.0.10"
     },
     "homeVmSize": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "Standard_B4ms"
     },
     "homeOU": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "OU=Computers,OU=Class,DC=ad,DC=waad,DC=training"
     },
     "windowsImagePublisher": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "MicrosoftWindowsServer"
     },
     "windowsImageOffer": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "WindowsServer"
     },
     "windowsImageSku": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "2016-Datacenter"
     },
     "windows2012Sku": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "2012-R2-Datacenter"
     },
     "terminalServerVMName": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "terminalserver"
     },
     "terminalServerNicIpAddress": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "10.0.0.11"
     },
     "terminalServerVmSize": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "Standard_B2s"
     },
     "terminalServerOU": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "OU=Servers,OU=Production,DC=ad,DC=waad,DC=training"
     },
     "userDesktopVMName": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "userdesktop"
     },
     "userDesktopNicIpAddress": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "10.0.0.12"
     },
     "userDesktopVmSize": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "Standard_B2s"
     },
     "userDesktopOU": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "OU=Computers,OU=Production,DC=ad,DC=waad,DC=training"
     },
     "adminDesktopVMName": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "admindesktop"
     },
     "adminDesktopNicIpAddress": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "10.0.0.13"
     },
     "adminDesktopVmSize": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "Standard_B2s"
     },
     "adminDesktopOU": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "OU=Computers,OU=Production,DC=ad,DC=waad,DC=training"
     },
     "linuxVMName": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "pwnbox"
     },
     "linuxNicIpAddress": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "10.0.0.101"
     },
     "linuxVmSize": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "Standard_B2s"
     },
     "linuxImagePublisher": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "Canonical"
     },
     "linuxImageOffer": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "UbuntuServer"
     },
     "linuxImageSku": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "18.04-DAILY-LTS"
     },
     "linuxAdminUsername": {
       "type":"string"
     },
     "dscUrl": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "https://waadtraining.blob.core.windows.net/bootstraps/"
     },
     "classUrl": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "https://waadtraining.blob.core.windows.net/class/"
     },
     "SSHKeyData": {
       "type": "string"
     }
   },
   "variables": {
-    "vnetID": "[resourceId(resourceGroup().name, 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
-    "subnetId": "[concat(variables('vnetID'),'/subnets/', parameters('studentSubnetName'))]",
+    "vnetID": "[resourceId(resourceGroup().name, 'Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+    "subnetId": "[concat(variables('vnetID'),'/subnets/', variables('studentSubnetName'))]",
     "adNicName": "[concat(parameters('adVmName'), '-nic')]",
     "linuxNicName": "[concat(parameters('linuxVmName'), '-nic')]",
     "homeNicName": "[concat(parameters('homeVmName'),'-nic')]",
@@ -187,26 +209,14 @@
     "linuxPublicIpName": "[concat(parameters('studentCode'),'-linux-pip')]",
     "domainJoinOptions": "3",
     "sshKeyPath": "[concat('/home/',parameters('linuxAdminUsername'),'/.ssh/authorized_keys')]",
+    "studentSubnetName": "[concat(parameters('studentCode'),'subnet')]",
+    "virtualNetworkName": "[concat(parameters('studentCode'),'storage')]",
+    "networkSecurityGroup": "[concat('waad.training-nsg-', resourceGroup().location)]"
   },
   "resources": [
     {
-      "type": "Microsoft.Storage/storageAccounts",
-      "name": "[parameters('storageAccountName')]",
-      "apiVersion": "2016-01-01",
-      "location": "[resourceGroup().location]",
-      "sku": {
-        "name": "Standard_LRS"
-      },
-      "kind": "Storage",
-      "properties": {},
-      "tags": {
-        "displayName": "StorageAccount",
-        "studentCode": "[parameters('studentCode')]"
-      }
-    },
-    {
       "type": "Microsoft.Network/virtualNetworks",
-      "name": "[parameters('virtualNetworkName')]",
+      "name": "[variables('virtualNetworkName')]",
       "apiVersion": "2016-03-30",
       "location": "[resourceGroup().location]",
       "properties": {
@@ -217,11 +227,11 @@
         },
         "subnets": [
           {
-            "name": "[parameters('studentSubnetName')]",
+            "name": "[variables('studentSubnetName')]",
             "properties": {
               "addressPrefix": "[parameters('virtualNetworkAddressRange')]",
               "networkSecurityGroup": {
-                "id": "[concat('/subscriptions/', parameters('subscriptionId'), '/resourceGroups/', parameters('masterResourceGroup'), '/providers/Microsoft.Network/networkSecurityGroups/', parameters('networkSecurityGroup'))]"
+                "id": "[concat('/subscriptions/', parameters('subscriptionId'), '/resourceGroups/waad.training-master/providers/Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroup'))]"
               }
             }
           }
@@ -238,7 +248,7 @@
       "name": "[variables('adNicName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -263,7 +273,6 @@
       "apiVersion": "2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]",
         "[resourceId('Microsoft.Network/networkInterfaces', variables('adNicName'))]"
       ],
       "location": "[resourceGroup().location]",
@@ -389,7 +398,7 @@
       "dependsOn": [
         
         "[resourceId('Microsoft.Network/publicIPAddresses', variables('linuxPublicIpName'))]",
-        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -426,7 +435,6 @@
       "name": "[parameters('linuxVmName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]",
         "[resourceId('Microsoft.Network/networkInterfaces', variables('linuxNicName'))]"
       ],
       "properties": {
@@ -520,7 +528,7 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses', variables('homePublicIpName'))]",
-        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -555,8 +563,7 @@
       "name": "[parameters('homeVmName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/networkInterfaces', variables('homeNicName'))]",
-        "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]"
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('homeNicName'))]"
       ],
       "properties": {
         "hardwareProfile": {
@@ -664,7 +671,7 @@
       "name": "[variables('terminalServerNicName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -696,8 +703,7 @@
       "name": "[parameters('terminalServerVmName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/networkInterfaces', variables('terminalServerNicName'))]",
-        "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]"
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('terminalServerNicName'))]"
       ],
       "properties": {
         "hardwareProfile": {
@@ -805,7 +811,7 @@
       "name": "[variables('userDesktopNicName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -837,8 +843,7 @@
       "name": "[parameters('userDesktopVmName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/networkInterfaces', variables('userDesktopNicName'))]",
-        "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]"
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('userDesktopNicName'))]"
       ],
       "properties": {
         "hardwareProfile": {
@@ -950,7 +955,7 @@
       "name": "[variables('adminDesktopNicName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -982,8 +987,7 @@
       "name": "[parameters('adminDesktopVmName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/networkInterfaces', variables('adminDesktopNicName'))]",
-        "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]"
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('adminDesktopNicName'))]"
       ],
       "properties": {
         "hardwareProfile": {

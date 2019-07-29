@@ -92,7 +92,7 @@ configuration HomeConfig
             $Shortcut.Save()
         }
         GetScript = { @{} }
-        TestScript = { $false }
+        TestScript = { Test-Path "C:\Users\Public\Desktop\Remote Desktop.lnk" }
     }
     Script CreatePickerShortcut
     {
@@ -105,7 +105,7 @@ configuration HomeConfig
             $Shortcut.Save()
         }
         GetScript = { @{} }
-        TestScript = { $false }
+        TestScript = { Test-Path "C:\Users\Public\Desktop\Exercise Picker.lnk" }
         DependsOn = "[Archive]UnzipClassFiles"
     }
     Script CreateCobaltStrikeShortcut
@@ -119,7 +119,7 @@ configuration HomeConfig
             $Shortcut.Save()
         }
         GetScript = { @{} }
-        TestScript = { $false }
+        TestScript = { Test-Path "C:\Users\Public\Desktop\Cobalt Strike.lnk" }
         DependsOn = "[Archive]UnzipClassFiles"
     }
     
@@ -134,17 +134,17 @@ configuration HomeConfig
             $Shortcut.Save()
         }
         GetScript = { @{} }
-        TestScript = { $false }
+        TestScript = { Test-Path "C:\Users\Public\Desktop\Bloodhound.lnk" }
         DependsOn = "[Archive]UnzipClassFiles"
     }
     Script SetTimeZone
     {
-        SetScript =  { 
+        SetScript =  {
             Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[SetTimeZone] Running.."
-            cmd.exe /c 'tzutil /s "Eastern Standard Time"'
+            Set-TimeZone -name 'Eastern Standard Time'
         }
         GetScript =  { @{} }
-        TestScript = { $false }
+        TestScript = { $(Get-TimeZone).Id -eq 'Eastern Standard Time' }
     }      
     cChocoInstaller installChoco
     {
@@ -188,10 +188,18 @@ configuration HomeConfig
     script installNeo4jService
     {
         SetScript =  { 
-            cmd.exe /c "C:\tools\neo4j-community\neo4j-community-3.4.7\bin\neo4j.bat start"
+            cmd.exe /c "C:\tools\neo4j-community\neo4j-community-3.5.1\bin\neo4j.bat start"
         }
         GetScript =  { @{} }
-        TestScript = { $false }
+        TestScript = { 
+            try {
+                Get-Service Neo4j -ErrorAction Stop
+                return $true
+            }
+            catch {
+                return $false
+            }
+         }
         DependsOn = "[cChocoPackageInstaller]neo4j-community"
     }
     LocalConfigurationManager 
