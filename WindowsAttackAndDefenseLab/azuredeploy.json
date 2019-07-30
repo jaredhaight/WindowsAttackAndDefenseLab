@@ -172,6 +172,12 @@
     },
     "SSHKeyData": {
       "type": "string"
+    },
+    "LinuxClassFolderURL": {
+      "type": "string"
+    },
+    "HomeClassFolderURL": {
+      "type": "string"
     }
   },
   "variables": {
@@ -186,7 +192,7 @@
     "homePublicIpName": "[concat(parameters('studentCode'),'-home-pip')]",
     "linuxPublicIpName": "[concat(parameters('studentCode'),'-linux-pip')]",
     "domainJoinOptions": "3",
-    "sshKeyPath": "[concat('/home/',parameters('linuxAdminUsername'),'/.ssh/authorized_keys')]",
+    "sshKeyPath": "[concat('/home/',parameters('linuxAdminUsername'),'/.ssh/authorized_keys')]"
   },
   "resources": [
     {
@@ -489,7 +495,7 @@
           "fileUris": [
             "[concat(parameters('dscUrl'),'linux-bootstrap.sh')]"
           ],
-          "commandToExecute": "bash linux-bootstrap.sh"
+          "commandToExecute": "[concat('bash linux-bootstrap.sh ', parameters('LinuxClassFolderUrl'))]"
         }
       },
       "tags": {
@@ -644,7 +650,7 @@
               "UserName": "[parameters('adAdminUsername')]",
               "Password": "PrivateSettingsRef:AdminPassword"
             },
-            "classUrl": "[parameters('classUrl')]"
+            "classUrl": "[parameters('HomeClassFolderUrl')]"
           }
         },
         "protectedSettings": {
