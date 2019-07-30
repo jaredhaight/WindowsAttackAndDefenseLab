@@ -194,6 +194,12 @@
     },
     "SSHKeyData": {
       "type": "string"
+    },
+    "LinuxClassFolderURL": {
+      "type": "string"
+    },
+    "HomeClassFolderURL": {
+      "type": "string"
     }
   },
   "variables": {
@@ -497,7 +503,7 @@
           "fileUris": [
             "[concat(parameters('dscUrl'),'linux-bootstrap.sh')]"
           ],
-          "commandToExecute": "bash linux-bootstrap.sh"
+          "commandToExecute": "[concat('bash linux-bootstrap.sh ', parameters('LinuxClassFolderUrl'))]"
         }
       },
       "tags": {
@@ -651,7 +657,7 @@
               "UserName": "[parameters('adAdminUsername')]",
               "Password": "PrivateSettingsRef:AdminPassword"
             },
-            "classUrl": "[parameters('classUrl')]"
+            "classUrl": "[parameters('HomeClassFolderUrl')]"
           }
         },
         "protectedSettings": {

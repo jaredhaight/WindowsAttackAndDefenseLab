@@ -1,36 +1,51 @@
 {
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
-  "parameters": {  
+  "parameters": {
     "LinuxAdminUsername": {
-      "value": "Username123"
-    },  
+      "value": "username"
+    },
     "SSHKeyData": {
-      "value": "ssh-rsa fooooooooooo username"
+      "value": "ssh-rsa foo"
     },
     "BackupUsername":{
-      "value": "Username123"
+      "value": "username"
     },
     "HelpdeskUsername":{
-      "value": "Username123"
+      "value": "username"
     },
     "AccountingUsername":{
-      "value": "Username123"
+      "value": "username"
     },
     "ServerAdminUsername":{
-      "value": "Username123"
+      "value": "username"
     },
-    "BackupPassword":{
-      "value": "Password123"
+    "HelperAccountUsername": {
+      "value": "username"
     },
-    "HelpdeskPassword":{
-      "value": "Password123"
+    "BackupUserPassword":{
+      "value": "password"
     },
-    "AccountingPassword":{
-      "value": "Password123"
+    "HelpdeskUserPassword":{
+      "value": "password"
+    },
+    "AccountingUserPassword":{
+      "value": "password"
     },
     "ServerAdminPassword":{
-      "value": "Password123"
+      "value": "password"
+    },
+    "HelperAccountPassword": {
+      "value": "password"
+    },
+    "StudentPassword": {
+      "value": "password"
+    },
+    "LinuxClassFolderURL": {
+      "value": "URL"
+    },
+    "HomeClassFolderURL": {
+      "value": "URL"
     }
   }
 }
