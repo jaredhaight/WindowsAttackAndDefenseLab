@@ -27,7 +27,10 @@
   [System.Management.Automation.PSCredential]$HelperAccountCreds,
 
   [Parameter(Mandatory)]
-  [string]$classUrl,
+  [string]$dcClassFolderUrl,
+
+  [Parameter(Mandatory)]
+  [string]$waadFolderUrl,
 
   [Parameter(Mandatory)]
   [string]$linuxNicIpAddress,
@@ -60,9 +63,8 @@
     Script DownloadClassFiles
     {
         SetScript =  { 
-            $file = $using:classUrl + 'DC.zip'
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadClassFiles] Downloading $file"
-            Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\Class.zip
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadClassFiles] Downloading DC.zip"
+            Invoke-WebRequest -Uri $using:dcClassFolderUrl -OutFile C:\Windows\Temp\Class.zip
         }
         GetScript =  { @{} }
         TestScript = { 
@@ -79,10 +81,9 @@
     }
     Script DownloadWAADFiles
     {
-        SetScript =  { 
-            $file = $using:classUrl + 'WAAD.zip'
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading $file"
-            Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\WAAD.zip
+        SetScript =  {
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading WAAD.zip"
+            Invoke-WebRequest -Uri $using:waadFolderUrl -OutFile C:\Windows\Temp\WAAD.zip
         }
         GetScript =  { @{} }
         TestScript = { 

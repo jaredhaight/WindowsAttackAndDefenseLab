@@ -3,14 +3,13 @@ configuration HomeConfig
    param 
    ( 
         [Parameter(Mandatory)]
-        [String]$classUrl,
+        [String]$homeClassFolderUrl,
         [Parameter(Mandatory)]
         [String]$DomainName,
         [Parameter(Mandatory)]
         [System.Management.Automation.PSCredential]$Admincreds
     )
   
-  Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[Start] Got FileURL: $classUrl"
   [System.Management.Automation.PSCredential ]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
   Import-DscResource -ModuleName PSDesiredStateConfiguration, cChoco
 
@@ -64,10 +63,9 @@ configuration HomeConfig
     }
     Script DownloadClassFiles
     {
-        SetScript =  { 
-            $file = $using:classUrl + 'Home.zip'
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadClassFiles] Downloading $file"
-            Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\Class.zip
+        SetScript =  {
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadClassFiles] Downloading Home.zip"
+            Invoke-WebRequest -Uri $using:homeClassFolderUrl -OutFile C:\Windows\Temp\Class.zip
         }
         GetScript =  { @{} }
         TestScript = { 

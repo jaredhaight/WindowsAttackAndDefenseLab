@@ -7,7 +7,7 @@ configuration TerminalServerConfig
         [Parameter(Mandatory)]
         [System.Management.Automation.PSCredential]$Admincreds,
         [Parameter(Mandatory)]
-        [String]$classUrl
+        [String]$waadFolderUrl
     )
   
   Import-DscResource -ModuleName PSDesiredStateConfiguration
@@ -19,9 +19,8 @@ configuration TerminalServerConfig
     Script DownloadWAADFiles
     {
         SetScript =  { 
-            $file = $using:classUrl + 'WAAD.zip'
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading $file"
-            Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\WAAD.zip
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading WAAD.zip"
+            Invoke-WebRequest -Uri $using:waadFolderUrl -OutFile C:\Windows\Temp\WAAD.zip
         }
         GetScript =  { @{} }
         TestScript = { 

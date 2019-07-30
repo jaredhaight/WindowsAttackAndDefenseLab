@@ -188,11 +188,16 @@
       "type": "string",
       "defaultValue": "https://waadtraining.blob.core.windows.net/bootstraps/"
     },
-    "classUrl": {
-      "type": "string",
-      "defaultValue": "https://waadtraining.blob.core.windows.net/class/"
-    },
     "SSHKeyData": {
+      "type": "string"
+    },
+    "DCClassFolderUrl": {
+      "type": "string"
+    },
+    "UserDesktopClassFolderUrl": {
+      "type": "string"
+    },
+    "WAADFolderUrl": {
       "type": "string"
     },
     "LinuxClassFolderUrl": {
@@ -358,7 +363,8 @@
                   "UserName": "[parameters('HelperAccountUserName')]",
                   "Password": "PrivateSettingsRef:HelperAccountPassword"
                 },
-                "classUrl": "[parameters('classUrl')]",
+                "dcClassFolderUrl": "[parameters('DCClassFolderUrl')]",
+                "waadFolderUrl": "[parameters('WAADFolderUrl')]",
                 "linuxNicIpAddress": "[parameters('linuxNicIpAddress')]"
               }
             },
@@ -657,7 +663,7 @@
               "UserName": "[parameters('adAdminUsername')]",
               "Password": "PrivateSettingsRef:AdminPassword"
             },
-            "classUrl": "[parameters('HomeClassFolderUrl')]"
+            "homeClassFolderUrl": "[parameters('HomeClassFolderUrl')]"
           }
         },
         "protectedSettings": {
@@ -797,7 +803,7 @@
               "UserName": "[parameters('adAdminUsername')]",
               "Password": "PrivateSettingsRef:AdminPassword"
             },
-            "classUrl": "[parameters('classUrl')]"
+            "waadFolderUrl": "[parameters('WAADFolderUrl')]"
           }
         },
         "protectedSettings": {
@@ -940,7 +946,8 @@
               "UserName": "[parameters('BackupUserName')]",
               "Password": "PrivateSettingsRef:BackupUserPassword"
             },
-            "classUrl": "[parameters('classUrl')]"
+            "userDesktopClassFolderUrl": "[parameters('UserDesktopClassFolderUrl')]",
+            "waadFolderUrl": "[parameters('WAADFolderUrl')]"
           }
         },
         "protectedSettings": {
@@ -1076,7 +1083,7 @@
           "modulesUrl": "[concat(parameters('dscUrl'), 'AdminDesktopConfig.zip')]",
           "configurationFunction": "adminDesktopConfig.ps1\\AdminDesktopConfig",
           "Properties": { 
-            "classUrl": "[parameters('classUrl')]"
+            "waadFolderUrl": "[parameters('WAADFolderUrl')]"
           }
         }
       },

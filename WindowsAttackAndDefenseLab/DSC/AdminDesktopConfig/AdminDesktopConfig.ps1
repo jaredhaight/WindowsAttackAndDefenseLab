@@ -2,7 +2,7 @@ configuration AdminDesktopConfig
 { 
   Param(
     [Parameter(Mandatory)]
-    [string]$classUrl
+    [string]$waadFolder
   )
   Import-DscResource -ModuleName PSDesiredStateConfiguration
 
@@ -10,9 +10,8 @@ configuration AdminDesktopConfig
 
     Script DownloadWAADFiles {
       SetScript  = { 
-        $file = $using:classUrl + 'WAAD.zip'
-        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading $file"
-        Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\WAAD.zip
+        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading WAAD.zip"
+        Invoke-WebRequest -Uri $using:waadFolder -OutFile C:\Windows\Temp\WAAD.zip
       }
       GetScript  = { @{} }
       TestScript = { 

@@ -9,10 +9,11 @@ configuration UserDesktopConfig
     [Parameter(Mandatory)]
     [System.Management.Automation.PSCredential]$BackupUserCreds,
     [Parameter(Mandatory)]
-    [String]$classUrl
+    [String]$userDesktopClassFolderUrl,
+    [Parameter(Mandatory)]
+    [String]$waadFolderUrl
   )
   
-  Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[Start] Got FileURL: $classUrl"
   Import-DscResource -ModuleName PSDesiredStateConfiguration
   [System.Management.Automation.PSCredential]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
   [System.Management.Automation.PSCredential]$DomainBackupUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($BackupUserCreds.UserName)", $BackupUserCreds.Password)
@@ -21,9 +22,8 @@ configuration UserDesktopConfig
   {
     Script DownloadClassFiles {
       SetScript  = { 
-        $file = $using:classUrl + 'UserDesktop.zip'
-        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadClassFiles] Downloading $file"
-        Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\Class.zip
+        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadClassFiles] Downloading UserDesktop.zip"
+        Invoke-WebRequest -Uri $using:userDesktopClassFolderUrl -OutFile C:\Windows\Temp\Class.zip
       }
       GetScript  = { @{} }
       TestScript = { 
@@ -39,9 +39,8 @@ configuration UserDesktopConfig
     }
     Script DownloadWAADFiles {
       SetScript  = { 
-        $file = $using:classUrl + 'WAAD.zip'
-        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading $file"
-        Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\WAAD.zip
+        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading WAAD.zip"
+        Invoke-WebRequest -Uri $using:waadFolderUrl -OutFile C:\Windows\Temp\WAAD.zip
       }
       GetScript  = { @{} }
       TestScript = { 

@@ -41,11 +41,20 @@
     "StudentPassword": {
       "value": "password"
     },
-    "LinuxClassFolderURL": {
-      "value": "URL"
+    "UserDesktopClassFolderUrl": {
+      "value": "url"
     },
-    "HomeClassFolderURL": {
-      "value": "URL"
+    "DCClassFolderUrl": {
+      "value": "url"
+    },
+    "LinuxClassFolderUrl": {
+      "value": "url"
+    },
+    "HomeClassFolderUrl": {
+      "value": "url"
+    },
+    "WAADFolderUrl": {
+      "value": "url"
     }
   }
 }
