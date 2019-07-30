@@ -195,10 +195,10 @@
     "SSHKeyData": {
       "type": "string"
     },
-    "LinuxClassFolderURL": {
+    "LinuxClassFolderUrl": {
       "type": "string"
     },
-    "HomeClassFolderURL": {
+    "HomeClassFolderUrl": {
       "type": "string"
     }
   },
