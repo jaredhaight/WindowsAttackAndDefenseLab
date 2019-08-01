@@ -155,7 +155,9 @@
         Write-Verbose -Verbose "Enabling DNS client diagnostics" 
       }
       GetScript =  { @{} }
-      TestScript = { $false }
+      TestScript = {
+        (Get-DnsServerDiagnostics).Queries
+      }
       DependsOn = "[WindowsFeature]DNS"
     }
 
@@ -331,12 +333,24 @@
       MembersToInclude =  $ServerAdminUsername, "StudentAdmin"
       DependsOn = "[xADUser]ServerAdmin", "[xADUser]StudentAdmin"
     }
-    xADGroup SchemaAdmins
+    # xADGroup SchemaAdmins
+    # {
+    #   GroupName = "Schema Admins"
+    #   Ensure = 'Present'
+    #   MembersToInclude = "StudentAdmin"
+    #   DependsOn = "[xADUser]StudentAdmin"
+    # }
+    Script SchemaAdmins
     {
-      GroupName = "Schema Admins"
-      Ensure = 'Present'
-      MembersToInclude = "StudentAdmin"
-      DependsOn = "[xADUser]StudentAdmin"
+      SetScript =  { 
+        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[SchemaAdmins] Adding StudentAdmin to SchemaAdmins"
+        Add-ADGroupMember -Identity 'Schema Admins' -Members 'StudentAdmin'
+      }
+      GetScript =  { @{} }
+      TestScript = { 
+        (Get-AdGroupMember "Schema Admins").name -contains 'StudentAdmin'
+       }
+       DependsOn = "[xADUser]StudentAdmin"
     }
     xADGroup AccountingUsers
     {

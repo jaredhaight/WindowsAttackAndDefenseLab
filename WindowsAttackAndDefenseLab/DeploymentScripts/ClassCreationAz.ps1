@@ -53,11 +53,11 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     HelperAccountPassword  = $TemplateFileParams.Parameters.HelperAccountPassword.value
     LinuxAdminUsername     = $TemplateFileParams.Parameters.LinuxAdminUsername.value
     SSHKeyData             = $TemplateFileParams.Parameters.SSHKeyData.value
-    DCClassFolderUrl    = $TemplateFileParams.Parameters.LinuxClassFolderUrl.value
-    UserDesktopClassFolderUrl     = $TemplateFileParams.Parameters.HomeClassFolderUrl.value
+    DCClassFolderUrl    = $TemplateFileParams.Parameters.DCClassFolderUrl.value
+    UserDesktopClassFolderUrl     = $TemplateFileParams.Parameters.UserDesktopClassFolderUrl.value
     LinuxClassFolderUrl    = $TemplateFileParams.Parameters.LinuxClassFolderUrl.value
     HomeClassFolderUrl     = $TemplateFileParams.Parameters.HomeClassFolderUrl.value
-    WAADFolderUrl    = $TemplateFileParams.Parameters.LinuxClassFolderUrl.value
+    WAADFolderUrl    = $TemplateFileParams.Parameters.WAADFolderUrl.value
   }
   $sleep = Get-Random -Minimum 1 -Maximum 8
   Write-Host "Sleeping for $sleep seconds"
