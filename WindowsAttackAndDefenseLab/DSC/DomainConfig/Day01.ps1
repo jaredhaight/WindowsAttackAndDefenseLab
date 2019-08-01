@@ -199,13 +199,13 @@
         RetryIntervalSec = $RetryIntervalSec
         DependsOn = "[xADDomain]FirstDS"
     }
-    # xADKDSKey 'KDSRootKey'
-    # {
-    #   Ensure = "Present"
-    #   EffectiveTime = "1/1/2019 13:00"
-    #   AllowUnsafeEffectiveTime = $true
-    #   DependsOn = "[xWaitForADDomain]DscForestWait"
-    # }
+    xADKDSKey 'KDSRootKey'
+    {
+      Ensure = "Present"
+      EffectiveTime = "1/1/2019 13:00"
+      AllowUnsafeEffectiveTime = $true
+      DependsOn = "[xWaitForADDomain]DscForestWait"
+    }
     xADOrganizationalUnit ProductionOU
     {
       Name = "Production"
@@ -361,7 +361,7 @@
     {
       SetScript =  { 
         Get-ADUser -Filter {SamAccountName -eq '_SVC01'} -Credential $DomainAdminCreds | Set-ADUser -ServicePrincipalNames @{Add="MSSQLSvc/sql02.$($DomainName)", "MSSQLSvc/sql02.$($DomainName):1433"} -Credential $DomainAdminCreds
-        Write-Verbose -Verbose "Enabling DNS client diagnostics" 
+        Write-Verbose -Verbose "Setting gMSA _SVC01 ServicePrincipalNames" 
       }
       GetScript =  { @{} }
       TestScript = { $false }

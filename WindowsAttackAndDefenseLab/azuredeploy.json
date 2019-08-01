@@ -337,7 +337,7 @@
             "typeHandlerVersion": "2.19",
             "autoUpgradeMinorVersion": true,
             "settings": {
-              "ModulesUrl": "[concat(parameters('dscUrl'), 'DomainConfig.zip')]",
+              "ModulesUrl": "[concat(parameters('dscUrl'), 'DomainConfig_BETA.zip')]",
               "ConfigurationFunction": "[concat(parameters('adDscFile'), '\\DomainConfig')]",
               "Properties": {
                 "DomainName": "[parameters('domainName')]",
@@ -369,6 +369,10 @@
                   "UserName": "[parameters('HelperAccountUserName')]",
                   "Password": "PrivateSettingsRef:HelperAccountPassword"
                 },
+                "SQLAccountCreds": {
+                  "UserName": "[parameters('SQLAccountUserName')]",
+                  "Password": "PrivateSettingsRef:SQLAccountPassword"
+                },
                 "dcClassFolderUrl": "[parameters('DCClassFolderUrl')]",
                 "waadFolderUrl": "[parameters('WAADFolderUrl')]",
                 "linuxNicIpAddress": "[parameters('linuxNicIpAddress')]"
@@ -381,7 +385,8 @@
                 "HelpDeskUserPassword": "[parameters('HelpDeskUserPassword')]",
                 "AccountingUserPassword": "[parameters('AccountingUserPassword')]",
                 "ServerAdminPassword": "[parameters('ServerAdminPassword')]",
-                "HelperAccountPassword": "[parameters('HelperAccountPassword')]"
+                "HelperAccountPassword": "[parameters('HelperAccountPassword')]",
+                "SQLAccountPassword": "[parameters('SQLAccountPassword')]"
               }
             }
           }
