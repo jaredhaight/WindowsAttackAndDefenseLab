@@ -53,6 +53,12 @@
     "HelperAccountPassword": {
       "type": "securestring"
     },
+    "SQLAccountUsername": {
+      "type": "string"
+    },
+    "SQLAccountPassword": {
+      "type": "securestring"
+    },
     "adAdminUsername": {
       "type": "string",
       "defaultValue": "WaadAdmin"

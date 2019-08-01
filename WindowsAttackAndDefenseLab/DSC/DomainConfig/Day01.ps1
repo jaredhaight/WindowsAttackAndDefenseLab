@@ -25,6 +25,9 @@
   
   [Parameter(Mandatory)]
   [System.Management.Automation.PSCredential]$HelperAccountCreds,
+  
+  [Parameter(Mandatory)]
+  [System.Management.Automation.PSCredential]$SQLAccountCreds,
 
   [Parameter(Mandatory)]
   [string]$dcClassFolderUrl,
@@ -47,13 +50,15 @@
   [System.Management.Automation.PSCredential]$DomainAccountingUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($AccountingUserCreds.UserName)", $AccountingUserCreds.Password)
   [System.Management.Automation.PSCredential]$DomainServerAdminCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($ServerAdminCreds.UserName)", $ServerAdminCreds.Password)
   [System.Management.Automation.PSCredential]$DomainHelperAccountCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($HelperAccountCreds.UserName)", $HelperAccountCreds.Password)
-
+  [System.Management.Automation.PSCredential]$DomainSQLAccountCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($SQLAccountCreds.UserName)", $SQLAccountCreds.Password)
+  
   $AdminUserName = $Admincreds.UserName
   $BackupUserUsername = $BackupUserCreds.UserName
   $HelpDeskUserUsername = $HelpDeskUserCreds.UserName
   $AccountingUserUsername = $AccountingUserCreds.UserName
   $ServerAdminUsername = $ServerAdminCreds.UserName
   $HelperAccountUsername = $HelperAccountCreds.UserName
+  $SQLAccountUsername = $SQLAccountCreds.UserName
   
   $Interface=Get-NetAdapter | Where-Object Name -Like "Ethernet*" | Select-Object -First 1
   $InterfaceAlias=$($Interface.Name)
@@ -194,6 +199,13 @@
         RetryIntervalSec = $RetryIntervalSec
         DependsOn = "[xADDomain]FirstDS"
     }
+    # xADKDSKey 'KDSRootKey'
+    # {
+    #   Ensure = "Present"
+    #   EffectiveTime = "1/1/2019 13:00"
+    #   AllowUnsafeEffectiveTime = $true
+    #   DependsOn = "[xWaitForADDomain]DscForestWait"
+    # }
     xADOrganizationalUnit ProductionOU
     {
       Name = "Production"
@@ -324,6 +336,37 @@
         Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
     }
+    xADUser SQLServiceAccount
+    {
+        DomainName = $DomainName
+        DomainAdministratorCredential = $DomainAdminCreds
+        UserName = $SQLAccountUsername
+        Password = $DomainSQLAccountCreds
+        ServicePrincipalNames = "MSSQLSvc/sql01.$($DomainName)","MSSQLSvc/sql01.$($DomainName):1433"
+        Ensure = "Present"
+        Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
+        DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
+    }
+    xADManagedServiceAccount gMSAServiceAccount
+    {
+        Ensure = "Present"
+        Credential = $DomainAdminCreds
+        ServiceAccountName = "_SVC01"
+        AccountType = "Group"
+        Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
+        Members = "$($ServerAdminUsername)", "Computer01$"
+        DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU", "[xADUser]ServerAdmin"
+    }
+    Script SetgMSAServicePrincipalNames
+    {
+      SetScript =  { 
+        Get-ADUser -Filter {SamAccountName -eq '_SVC01'} -Credential $DomainAdminCreds | Set-ADUser -ServicePrincipalNames @{Add="MSSQLSvc/sql02.$($DomainName)", "MSSQLSvc/sql02.$($DomainName):1433"} -Credential $DomainAdminCreds
+        Write-Verbose -Verbose "Enabling DNS client diagnostics" 
+      }
+      GetScript =  { @{} }
+      TestScript = { $false }
+      DependsOn = "[xADManagedServiceAccount]gMSAServiceAccount"
+    }
     xADGroup DomainAdmins
     {
       GroupName = "Domain Admins"
@@ -367,9 +410,9 @@
       Category = "Security"
       Description = "Robots that do our bidding"
       Ensure = 'Present'
-      MembersToInclude = $BackupUserUsername, $HelperAccountUsername
+      MembersToInclude = $BackupUserUsername, $HelperAccountUsername, $SQLAccountUsername
       Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
-      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser"
+      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser", "[xADUser]SQLServiceAccount"
     }
     xTimeZone SetTimezone
     {
