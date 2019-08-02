@@ -59,6 +59,10 @@
     "SQLAccountPassword": {
       "type": "securestring"
     },
+    "gMSAAccountUsername": {
+      "type": "string",
+      "defaultValue": "_ADFS"
+    },
     "adAdminUsername": {
       "type": "string",
       "defaultValue": "WaadAdmin"
@@ -373,6 +377,7 @@
                   "UserName": "[parameters('SQLAccountUserName')]",
                   "Password": "PrivateSettingsRef:SQLAccountPassword"
                 },
+                "gMSAAccountUsername": "[parameters('gMSAAccountUsername')]",
                 "dcClassFolderUrl": "[parameters('DCClassFolderUrl')]",
                 "waadFolderUrl": "[parameters('WAADFolderUrl')]",
                 "linuxNicIpAddress": "[parameters('linuxNicIpAddress')]"

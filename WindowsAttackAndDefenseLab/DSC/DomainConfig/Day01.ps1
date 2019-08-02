@@ -30,6 +30,9 @@
   [System.Management.Automation.PSCredential]$SQLAccountCreds,
 
   [Parameter(Mandatory)]
+  [string]$gMSAAccountUsername,
+
+  [Parameter(Mandatory)]
   [string]$dcClassFolderUrl,
 
   [Parameter(Mandatory)]
@@ -351,17 +354,17 @@
     {
         Ensure = "Present"
         Credential = $DomainAdminCreds
-        ServiceAccountName = "_SVC01"
+        ServiceAccountName = $gMSAAccountUsername
         AccountType = "Group"
         Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
-        Members = "$($ServerAdminUsername)", "Computer01$"
+        Members = "$($ServerAdminUsername)"
         DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU", "[xADUser]ServerAdmin"
     }
     Script SetgMSAServicePrincipalNames
     {
       SetScript =  { 
-        Get-ADUser -Filter {SamAccountName -eq '_SVC01'} -Credential $DomainAdminCreds | Set-ADUser -ServicePrincipalNames @{Add="MSSQLSvc/sql02.$($DomainName)", "MSSQLSvc/sql02.$($DomainName):1433"} -Credential $DomainAdminCreds
-        Write-Verbose -Verbose "Setting gMSA _SVC01 ServicePrincipalNames" 
+        Get-ADUser -Filter {SamAccountName -eq "$($gMSAAccountUsername)"} -Credential $DomainAdminCreds | Set-ADUser -ServicePrincipalNames @{Add="http/fs.$($DomainName)", "host/fs.$($DomainName):1433"} -Credential $DomainAdminCreds
+        Write-Verbose -Verbose "Set gMSA $($gMSAAccountUsername) ServicePrincipalNames" 
       }
       GetScript =  { @{} }
       TestScript = { $false }
