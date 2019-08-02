@@ -363,11 +363,23 @@
     Script SetgMSAServicePrincipalNames
     {
       SetScript =  { 
-        Get-ADServiceAccount -Identity $gMSAAccountUsername -Credential $DomainAdminCreds | Set-ADServiceAccount -ServicePrincipalNames @{Add="http/fs.$($DomainName)", "host/fs.$($DomainName):1433"} -Credential $DomainAdminCreds
-        Write-Verbose -Verbose "Set gMSA $($gMSAAccountUsername) ServicePrincipalNames" 
+        Get-ADServiceAccount -Identity $using:gMSAAccountUsername -Credential $using:DomainAdminCreds | Set-ADServiceAccount -ServicePrincipalNames @{Add="http/fs.$($using:DomainName)", "host/fs.$($using:DomainName)"} -Credential $using:DomainAdminCreds
+        Write-Verbose -Verbose "Set gMSA $($using:gMSAAccountUsername) ServicePrincipalNames" 
       }
-      GetScript =  { @{} }
-      TestScript = { $false }
+      GetScript = {            
+        Return @{            
+            Result = [string]$((Get-ADServiceAccount -Identity $using:gMSAAccountUsername -Credential $using:DomainAdminCreds -Properties ServicePrincipalNames).ServicePrincipalNames)            
+        }            
+      }
+      
+      TestScript = { 
+        if ( (Get-ADServiceAccount -Identity $using:gMSAAccountUsername -Credential $using:DomainAdminCreds -Properties ServicePrincipalNames).ServicePrincipalNames -eq $null) {
+          return $false
+        }
+        else {
+          return $true
+        }
+      }
       DependsOn = "[xADManagedServiceAccount]gMSAServiceAccount"
     }
     xADGroup DomainAdmins
