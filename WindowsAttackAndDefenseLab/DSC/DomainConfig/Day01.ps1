@@ -363,7 +363,7 @@
     Script SetgMSAServicePrincipalNames
     {
       SetScript =  { 
-        Get-ADUser -Filter {SamAccountName -eq "$($gMSAAccountUsername)"} -Credential $DomainAdminCreds | Set-ADUser -ServicePrincipalNames @{Add="http/fs.$($DomainName)", "host/fs.$($DomainName):1433"} -Credential $DomainAdminCreds
+        Get-ADServiceAccount -Identity $gMSAAccountUsername -Credential $DomainAdminCreds | Set-ADServiceAccount -ServicePrincipalNames @{Add="http/fs.$($DomainName)", "host/fs.$($DomainName):1433"} -Credential $DomainAdminCreds
         Write-Verbose -Verbose "Set gMSA $($gMSAAccountUsername) ServicePrincipalNames" 
       }
       GetScript =  { @{} }
