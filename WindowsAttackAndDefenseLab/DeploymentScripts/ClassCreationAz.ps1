@@ -91,9 +91,9 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
   if ($deployed) {
     forEach ($item in $ipInfo) {
       $record = (New-AzDnsRecordConfig -Cname "$StudentCode.$Region.cloudapp.azure.com")
-      New-AzDnsRecordSet -Name $StudentCode -RecordType "CNAME" -ZoneName "waad.training" -ResourceGroupName $masterResourceGroup -Ttl 10 -DnsRecords $record
+      New-AzDnsRecordSet -Name $StudentCode -RecordType "CNAME" -ZoneName "waad.training" -ResourceGroupName "waad.training-master" -Ttl 10 -DnsRecords $record
       $record = (New-AzDnsRecordConfig -Cname "$StudentCode-linux.$Region.cloudapp.azure.com")
-      New-AzDnsRecordSet -Name "$StudentCode-linux" -RecordType "CNAME" -ZoneName "waad.training" -ResourceGroupName $masterResourceGroup -Ttl 10 -DnsRecords $record
+      New-AzDnsRecordSet -Name "$StudentCode-linux" -RecordType "CNAME" -ZoneName "waad.training" -ResourceGroupName "waad.training-master" -Ttl 10 -DnsRecords $record
     }
   }
 }
