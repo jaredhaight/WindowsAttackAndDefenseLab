@@ -35,11 +35,39 @@ configuration TerminalServerConfig
         Force = $true
         DependsOn = "[Script]DownloadWAADFiles"
     }
+
+    File NETSourceFolder {
+        Type = "directory"
+        DestinationPath = "C:\NETSource"
+        Ensure = "Present"
+    }
+
+    Script DotNet351CabDownload {
+        SetScript = {            
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading .NET cab"
+            Invoke-WebRequest -Uri "http://www.waad.training/microsoft-windows-netfx3-ondemand-package.cab" -OutFile "C:\NETSource\microsoft-windows-netfx3-ondemand-package.cab"
+        }
+        GetScript =  { @{} }
+        TestScript = {
+            Test-Path "C:\NETSource\microsoft-windows-netfx3-ondemand-package.cab"
+        }
+        DependsOn = "[File]NETSourceFolder"
+    }
+
     WindowsFeature RemoteDesktop
     {
         Ensure = "Present" 
         Name = "RDS-RD-Server"
     }
+
+    WindowsFeature DotNetCore
+    {
+        Ensure = "Present" 
+        Name = "Net-Framework-Core"
+        Source = "C:\NETSource"
+        DependsOn = "[Script]DotNet351CabDownload"
+    }
+    
     Script SetTimeZone
     {
         SetScript =  { 
@@ -49,11 +77,7 @@ configuration TerminalServerConfig
         GetScript =  { @{} }
         TestScript = { $false }
     }
-    WindowsFeature DotNetCore
-    {
-        Ensure = "Present" 
-        Name = "Net-Framework-Core"
-    }
+
     Group AddRDPAccessGroup
     {
         GroupName='Remote Desktop Users'   
@@ -62,6 +86,7 @@ configuration TerminalServerConfig
         Credential = $DomainCreds    
         PsDscRunAsCredential = $DomainCreds
     }
+    
     Group AddAdmins
     {
         GroupName='Administrators'   
@@ -70,6 +95,7 @@ configuration TerminalServerConfig
         Credential = $DomainCreds    
         PsDscRunAsCredential = $DomainCreds
     }
+    
     LocalConfigurationManager 
     {
         ConfigurationMode = 'ApplyOnly'
