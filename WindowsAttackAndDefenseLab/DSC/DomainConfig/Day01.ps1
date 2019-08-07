@@ -360,6 +360,18 @@
         Members = "$($ServerAdminUsername)"
         DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU", "[xADUser]ServerAdmin"
     }
+    # xADServicePrincipalName 'http/fs'
+    # {
+    #     ServicePrincipalName = "http/fs.$($using:DomainName)"
+    #     Account              = "$($using:gMSAAccountUsername)$"
+    #     DependsOn = "[xADManagedServiceAccount]gMSAServiceAccount"
+    # }
+    # xADServicePrincipalName 'host/fs'
+    # {
+    #     ServicePrincipalName = "host/fs.$($using:DomainName)"
+    #     Account              = "$($using:gMSAAccountUsername)$"
+    #     DependsOn = "[xADManagedServiceAccount]gMSAServiceAccount"
+    # }
     Script SetgMSAServicePrincipalNames
     {
       SetScript =  { 
