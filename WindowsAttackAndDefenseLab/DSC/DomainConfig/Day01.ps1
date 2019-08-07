@@ -25,6 +25,12 @@
   
   [Parameter(Mandatory)]
   [System.Management.Automation.PSCredential]$HelperAccountCreds,
+  
+  [Parameter(Mandatory)]
+  [System.Management.Automation.PSCredential]$SQLAccountCreds,
+
+  [Parameter(Mandatory)]
+  [string]$gMSAAccountUsername,
 
   [Parameter(Mandatory)]
   [string]$dcClassFolderUrl,
@@ -47,13 +53,15 @@
   [System.Management.Automation.PSCredential]$DomainAccountingUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($AccountingUserCreds.UserName)", $AccountingUserCreds.Password)
   [System.Management.Automation.PSCredential]$DomainServerAdminCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($ServerAdminCreds.UserName)", $ServerAdminCreds.Password)
   [System.Management.Automation.PSCredential]$DomainHelperAccountCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($HelperAccountCreds.UserName)", $HelperAccountCreds.Password)
-
+  [System.Management.Automation.PSCredential]$DomainSQLAccountCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($SQLAccountCreds.UserName)", $SQLAccountCreds.Password)
+  
   $AdminUserName = $Admincreds.UserName
   $BackupUserUsername = $BackupUserCreds.UserName
   $HelpDeskUserUsername = $HelpDeskUserCreds.UserName
   $AccountingUserUsername = $AccountingUserCreds.UserName
   $ServerAdminUsername = $ServerAdminCreds.UserName
   $HelperAccountUsername = $HelperAccountCreds.UserName
+  $SQLAccountUsername = $SQLAccountCreds.UserName
   
   $Interface=Get-NetAdapter | Where-Object Name -Like "Ethernet*" | Select-Object -First 1
   $InterfaceAlias=$($Interface.Name)
@@ -196,6 +204,13 @@
         RetryIntervalSec = $RetryIntervalSec
         DependsOn = "[xADDomain]FirstDS"
     }
+    xADKDSKey 'KDSRootKey'
+    {
+      Ensure = "Present"
+      EffectiveTime = "1/1/2019 13:00"
+      AllowUnsafeEffectiveTime = $true
+      DependsOn = "[xWaitForADDomain]DscForestWait"
+    }
     xADOrganizationalUnit ProductionOU
     {
       Name = "Production"
@@ -326,6 +341,61 @@
         Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
     }
+    xADUser SQLServiceAccount
+    {
+        DomainName = $DomainName
+        DomainAdministratorCredential = $DomainAdminCreds
+        UserName = $SQLAccountUsername
+        Password = $DomainSQLAccountCreds
+        ServicePrincipalNames = "MSSQLSvc/sql01.$($DomainName)","MSSQLSvc/sql01.$($DomainName):1433"
+        Ensure = "Present"
+        Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
+        DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
+    }
+    xADManagedServiceAccount gMSAServiceAccount
+    {
+        Ensure = "Present"
+        Credential = $DomainAdminCreds
+        ServiceAccountName = $gMSAAccountUsername
+        AccountType = "Group"
+        Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
+        Members = "$($ServerAdminUsername)"
+        DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU", "[xADUser]ServerAdmin"
+    }
+    # xADServicePrincipalName 'http/fs'
+    # {
+    #     ServicePrincipalName = "http/fs.$($using:DomainName)"
+    #     Account              = "$($using:gMSAAccountUsername)$"
+    #     DependsOn = "[xADManagedServiceAccount]gMSAServiceAccount"
+    # }
+    # xADServicePrincipalName 'host/fs'
+    # {
+    #     ServicePrincipalName = "host/fs.$($using:DomainName)"
+    #     Account              = "$($using:gMSAAccountUsername)$"
+    #     DependsOn = "[xADManagedServiceAccount]gMSAServiceAccount"
+    # }
+    Script SetgMSAServicePrincipalNames
+    {
+      SetScript =  { 
+        Get-ADServiceAccount -Identity $using:gMSAAccountUsername -Credential $using:DomainAdminCreds | Set-ADServiceAccount -ServicePrincipalNames @{Add="http/fs.$($using:DomainName)", "host/fs.$($using:DomainName)"} -Credential $using:DomainAdminCreds
+        Write-Verbose -Verbose "Set gMSA $($using:gMSAAccountUsername) ServicePrincipalNames" 
+      }
+      GetScript = {            
+        Return @{            
+            Result = [string]$((Get-ADServiceAccount -Identity $using:gMSAAccountUsername -Credential $using:DomainAdminCreds -Properties ServicePrincipalNames).ServicePrincipalNames)            
+        }            
+      }
+      
+      TestScript = { 
+        if ( (Get-ADServiceAccount -Identity $using:gMSAAccountUsername -Credential $using:DomainAdminCreds -Properties ServicePrincipalNames).ServicePrincipalNames -eq $null) {
+          return $false
+        }
+        else {
+          return $true
+        }
+      }
+      DependsOn = "[xADManagedServiceAccount]gMSAServiceAccount"
+    }
     xADGroup DomainAdmins
     {
       GroupName = "Domain Admins"
@@ -381,9 +451,9 @@
       Category = "Security"
       Description = "Robots that do our bidding"
       Ensure = 'Present'
-      MembersToInclude = $BackupUserUsername, $HelperAccountUsername
+      MembersToInclude = $BackupUserUsername, $HelperAccountUsername, $SQLAccountUsername
       Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
-      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser"
+      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser", "[xADUser]SQLServiceAccount"
     }
     xTimeZone SetTimezone
     {

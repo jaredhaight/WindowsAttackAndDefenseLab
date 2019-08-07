@@ -53,6 +53,16 @@
     "HelperAccountPassword": {
       "type": "securestring"
     },
+    "SQLAccountUsername": {
+      "type": "string"
+    },
+    "SQLAccountPassword": {
+      "type": "securestring"
+    },
+    "gMSAAccountUsername": {
+      "type": "string",
+      "defaultValue": "_ADFS"
+    },
     "adAdminUsername": {
       "type": "string",
       "defaultValue": "WaadAdmin"
@@ -331,7 +341,7 @@
             "typeHandlerVersion": "2.19",
             "autoUpgradeMinorVersion": true,
             "settings": {
-              "ModulesUrl": "[concat(parameters('dscUrl'), 'DomainConfig.zip')]",
+              "ModulesUrl": "[concat(parameters('dscUrl'), 'DomainConfig_BETA.zip')]",
               "ConfigurationFunction": "[concat(parameters('adDscFile'), '\\DomainConfig')]",
               "Properties": {
                 "DomainName": "[parameters('domainName')]",
@@ -363,6 +373,11 @@
                   "UserName": "[parameters('HelperAccountUserName')]",
                   "Password": "PrivateSettingsRef:HelperAccountPassword"
                 },
+                "SQLAccountCreds": {
+                  "UserName": "[parameters('SQLAccountUserName')]",
+                  "Password": "PrivateSettingsRef:SQLAccountPassword"
+                },
+                "gMSAAccountUsername": "[parameters('gMSAAccountUsername')]",
                 "dcClassFolderUrl": "[parameters('DCClassFolderUrl')]",
                 "waadFolderUrl": "[parameters('WAADFolderUrl')]",
                 "linuxNicIpAddress": "[parameters('linuxNicIpAddress')]"
@@ -375,7 +390,8 @@
                 "HelpDeskUserPassword": "[parameters('HelpDeskUserPassword')]",
                 "AccountingUserPassword": "[parameters('AccountingUserPassword')]",
                 "ServerAdminPassword": "[parameters('ServerAdminPassword')]",
-                "HelperAccountPassword": "[parameters('HelperAccountPassword')]"
+                "HelperAccountPassword": "[parameters('HelperAccountPassword')]",
+                "SQLAccountPassword": "[parameters('SQLAccountPassword')]"
               }
             }
           }

@@ -1,46 +1,48 @@
-# Localized messages
-data LocalizedData
-{
-    # culture="en-US"
-    ConvertFrom-StringData @'
-        RoleNotFoundError        = Please ensure that the PowerShell module for role '{0}' is installed
-        RetrievingOU             = Retrieving OU '{0}'.
-        UpdatingOU               = Updating OU '{0}'
-        DeletingOU               = Deleting OU '{0}'
-        CreatingOU               = Creating OU '{0}'
-        OUInDesiredState         = OU '{0}' exists and is in the desired state
-        OUNotInDesiredState      = OU '{0}' exists but is not in the desired state
-        OUExistsButShouldNot     = OU '{0}' exists when it should not exist
-        OUDoesNotExistButShould  = OU '{0}' does not exist when it should exist
-'@
-}
+$script:resourceModulePath = Split-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -Parent
+$script:modulesFolderPath = Join-Path -Path $script:resourceModulePath -ChildPath 'Modules'
+
+$script:localizationModulePath = Join-Path -Path $script:modulesFolderPath -ChildPath 'xActiveDirectory.Common'
+Import-Module -Name (Join-Path -Path $script:localizationModulePath -ChildPath 'xActiveDirectory.Common.psm1')
+
+$script:localizedData = Get-LocalizedData -ResourceName 'MSFT_xADOrganizationalUnit'
 
 function Get-TargetResource
 {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
     param
-    (    
-        [parameter(Mandatory)] 
-        [System.String] $Name,
+    (
+        [Parameter(Mandatory = $true)]
+        [System.String]
+        $Name,
 
-        [parameter(Mandatory)] 
-        [System.String] $Path
+        [Parameter(Mandatory = $true)]
+        [System.String]
+        $Path
     )
-    
-    Assert-Module -ModuleName 'ActiveDirectory';
-    Write-Verbose ($LocalizedData.RetrievingOU -f $Name)
+
+    Assert-Module -ModuleName 'ActiveDirectory'
+
+    Write-Verbose ($script:localizedData.RetrievingOU -f $Name)
+
     $ou = Get-ADOrganizationalUnit -Filter { Name -eq $Name } -SearchBase $Path -SearchScope OneLevel -Properties ProtectedFromAccidentalDeletion, Description
 
-    $targetResource = @{
-        Name = $Name
-        Path = $Path
-        Ensure = if ($null -eq $ou) { 'Absent' } else { 'Present' }
-        ProtectedFromAccidentalDeletion = $ou.ProtectedFromAccidentalDeletion
-        Description = $ou.Description
+    if ($null -eq $ou)
+    {
+        $ensureState = 'Absent'
     }
-    return $targetResource
+    else
+    {
+        $ensureState = 'Present'
+    }
 
+    return @{
+        Name                            = $Name
+        Path                            = $Path
+        Ensure                          = $ensureState
+        ProtectedFromAccidentalDeletion = $ou.ProtectedFromAccidentalDeletion
+        Description                     = $ou.Description
+    }
 } # end function Get-TargetResource
 
 function Test-TargetResource
@@ -48,75 +50,90 @@ function Test-TargetResource
     [CmdletBinding()]
     [OutputType([System.Boolean])]
     param
-    (    
-        [parameter(Mandatory)] 
-        [System.String] $Name,
+    (
+        [Parameter(Mandatory = $true)]
+        [System.String]
+        $Name,
 
-        [parameter(Mandatory)] 
-        [System.String] $Path,
-        
+        [Parameter(Mandatory = $true)]
+        [System.String]
+        $Path,
+
+        [Parameter()]
         [ValidateSet('Present', 'Absent')]
         [System.String]
         $Ensure = 'Present',
 
+        [Parameter()]
         [ValidateNotNull()]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.CredentialAttribute()]
         $Credential,
 
+        [Parameter()]
         [ValidateNotNull()]
-        [System.Boolean] $ProtectedFromAccidentalDeletion = $true,
+        [System.Boolean]
+        $ProtectedFromAccidentalDeletion = $true,
 
+        [Parameter()]
         [ValidateNotNull()]
-        [System.String] $Description = ''
+        [System.String]
+        $Description = '',
+
+        [Parameter()]
+        [ValidateNotNull()]
+        [System.Boolean]
+        $RestoreFromRecycleBin
     )
 
     $targetResource = Get-TargetResource -Name $Name -Path $Path
-    
+
     if ($targetResource.Ensure -eq 'Present')
     {
         if ($Ensure -eq 'Present')
         {
-            ## Organizational unit exists
-            if ([System.String]::IsNullOrEmpty($Description)) {
+            # Organizational unit exists
+            if ([System.String]::IsNullOrEmpty($Description))
+            {
                 $isCompliant = (($targetResource.Name -eq $Name) -and
-                                    ($targetResource.Path -eq $Path) -and
-                                        ($targetResource.ProtectedFromAccidentalDeletion -eq $ProtectedFromAccidentalDeletion))
+                    ($targetResource.Path -eq $Path) -and
+                    ($targetResource.ProtectedFromAccidentalDeletion -eq $ProtectedFromAccidentalDeletion))
             }
-            else {
+            else
+            {
                 $isCompliant = (($targetResource.Name -eq $Name) -and
-                                    ($targetResource.Path -eq $Path) -and
-                                        ($targetResource.ProtectedFromAccidentalDeletion -eq $ProtectedFromAccidentalDeletion) -and
-                                            ($targetResource.Description -eq $Description))
+                    ($targetResource.Path -eq $Path) -and
+                    ($targetResource.ProtectedFromAccidentalDeletion -eq $ProtectedFromAccidentalDeletion) -and
+                    ($targetResource.Description -eq $Description))
             }
 
             if ($isCompliant)
             {
-                Write-Verbose ($LocalizedData.OUInDesiredState -f $targetResource.Name)
+                Write-Verbose ($script:localizedData.OUInDesiredState -f $targetResource.Name)
             }
             else
             {
-                Write-Verbose ($LocalizedData.OUNotInDesiredState -f $targetResource.Name)
+                Write-Verbose ($script:localizedData.OUNotInDesiredState -f $targetResource.Name)
             }
         }
         else
         {
             $isCompliant = $false
-            Write-Verbose ($LocalizedData.OUExistsButShouldNot -f $targetResource.Name)
+            Write-Verbose ($script:localizedData.OUExistsButShouldNot -f $targetResource.Name)
         }
     }
     else
     {
-        ## Organizational unit does not exist
+        # Organizational unit does not exist
         if ($Ensure -eq 'Present')
         {
             $isCompliant = $false
-            Write-Verbose ($LocalizedData.OUDoesNotExistButShould -f $targetResource.Name)
+            Write-Verbose ($script:localizedData.OUDoesNotExistButShould -f $targetResource.Name)
         }
         else
         {
             $isCompliant = $true
-            Write-Verbose ($LocalizedData.OUInDesiredState -f $targetResource.Name)
+            Write-Verbose ($script:localizedData.OUDoesNotExistAndShouldNot -f $targetResource.Name)
         }
     }
 
@@ -128,94 +145,139 @@ function Set-TargetResource
 {
     [CmdletBinding()]
     param
-    (    
-        [parameter(Mandatory)] 
-        [System.String] $Name,
+    (
+        [Parameter(Mandatory = $true)]
+        [System.String]
+        $Name,
 
-        [parameter(Mandatory)] 
-        [System.String] $Path,
-        
+        [Parameter(Mandatory = $true)]
+        [System.String]
+        $Path,
+
+        [Parameter()]
         [ValidateSet('Present', 'Absent')]
         [System.String]
         $Ensure = 'Present',
 
+        [Parameter()]
         [ValidateNotNull()]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.CredentialAttribute()]
         $Credential,
 
+        [Parameter()]
         [ValidateNotNull()]
-        [System.Boolean] $ProtectedFromAccidentalDeletion = $true,
+        [System.Boolean]
+        $ProtectedFromAccidentalDeletion = $true,
 
+        [Parameter()]
         [ValidateNotNull()]
-        [System.String] $Description = ''
+        [System.String]
+        $Description = '',
+
+        [Parameter()]
+        [ValidateNotNull()]
+        [System.Boolean]
+        $RestoreFromRecycleBin
     )
 
-    Assert-Module -ModuleName 'ActiveDirectory';
+    Assert-Module -ModuleName 'ActiveDirectory'
+
     $targetResource = Get-TargetResource -Name $Name -Path $Path
-    
+
     if ($targetResource.Ensure -eq 'Present')
     {
         $ou = Get-ADOrganizationalUnit -Filter { Name -eq $Name } -SearchBase $Path -SearchScope OneLevel
+
         if ($Ensure -eq 'Present')
         {
-            Write-Verbose ($LocalizedData.UpdatingOU -f $targetResource.Name)
+            Write-Verbose ($script:localizedData.UpdatingOU -f $targetResource.Name)
+
             $setADOrganizationalUnitParams = @{
-                Identity = $ou
-                Description = $Description
+                Identity                        = $ou
+                Description                     = $Description
                 ProtectedFromAccidentalDeletion = $ProtectedFromAccidentalDeletion
             }
+
             if ($Credential)
             {
                 $setADOrganizationalUnitParams['Credential'] = $Credential
             }
+
             Set-ADOrganizationalUnit @setADOrganizationalUnitParams
         }
         else
         {
-            Write-Verbose ($LocalizedData.DeletingOU -f $targetResource.Name)
+            Write-Verbose ($script:localizedData.DeletingOU -f $targetResource.Name)
+
             if ($targetResource.ProtectedFromAccidentalDeletion)
             {
                 $setADOrganizationalUnitParams = @{
-                    Identity = $ou
+                    Identity                        = $ou
                     ProtectedFromAccidentalDeletion = $ProtectedFromAccidentalDeletion
                 }
+
                 if ($Credential)
                 {
                     $setADOrganizationalUnitParams['Credential'] = $Credential
                 }
+
                 Set-ADOrganizationalUnit @setADOrganizationalUnitParams
             }
 
             $removeADOrganizationalUnitParams = @{
                 Identity = $ou
             }
+
             if ($Credential)
             {
                 $removeADOrganizationalUnitParams['Credential'] = $Credential
             }
+
             Remove-ADOrganizationalUnit @removeADOrganizationalUnitParams
         }
+
+        return # return from Set method to make it easier to test for a successful restore
     }
     else
     {
-        Write-Verbose ($LocalizedData.CreatingOU -f $targetResource.Name)
-        $newADOrganizationalUnitParams = @{
-            Name = $Name
-            Path = $Path
-            Description = $Description
-            ProtectedFromAccidentalDeletion = $ProtectedFromAccidentalDeletion
+        if ($RestoreFromRecycleBin)
+        {
+            Write-Verbose -Message ($script:localizedData.RestoringOu -f $Name)
+
+            $restoreParams = @{
+                Identity    = $Name
+                ObjectClass = 'OrganizationalUnit'
+                ErrorAction = 'Stop'
+            }
+
+            if ($Credential)
+            {
+                $restoreParams['Credential'] = $Credential
+            }
+
+            $restoreSuccessful = Restore-ADCommonObject @restoreParams
         }
-        if ($Credential) {
-            $newADOrganizationalUnitParams['Credential'] = $Credential
+
+        if (-not $RestoreFromRecycleBin -or ($RestoreFromRecycleBin -and -not $restoreSuccessful))
+        {
+            Write-Verbose ($script:localizedData.CreatingOU -f $targetResource.Name)
+
+            $newADOrganizationalUnitParams = @{
+                Name                            = $Name
+                Path                            = $Path
+                Description                     = $Description
+                ProtectedFromAccidentalDeletion = $ProtectedFromAccidentalDeletion
+            }
+
+            if ($Credential)
+            {
+                $newADOrganizationalUnitParams['Credential'] = $Credential
+            }
+
+            New-ADOrganizationalUnit @newADOrganizationalUnitParams
         }
-        New-ADOrganizationalUnit @newADOrganizationalUnitParams
     }
-
 } #end function Set-TargetResource
-
-## Import the common AD functions
-$adCommonFunctions = Join-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -ChildPath '\MSFT_xADCommon\MSFT_xADCommon.ps1';
-. $adCommonFunctions;
 
 Export-ModuleMember -Function *-TargetResource
