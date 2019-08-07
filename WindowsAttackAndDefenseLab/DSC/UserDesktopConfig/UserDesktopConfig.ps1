@@ -16,8 +16,7 @@ configuration UserDesktopConfig
   
   Import-DscResource -ModuleName PSDesiredStateConfiguration
   [System.Management.Automation.PSCredential]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
-  [System.Management.Automation.PSCredential]$DomainBackupUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($BackupUserCreds.UserName)", $BackupUserCreds.Password)
-
+  
   Node localhost 
   {
     Script DownloadClassFiles {
@@ -30,6 +29,7 @@ configuration UserDesktopConfig
         Test-Path C:\Windows\Temp\Class.zip
       }
     }
+    
     Archive UnzipClassFiles {
       Ensure      = "Present"
       Destination = "C:\Class"
@@ -37,6 +37,7 @@ configuration UserDesktopConfig
       Force       = $true
       DependsOn   = "[Script]DownloadClassFiles"
     }
+    
     Script DownloadWAADFiles {
       SetScript  = { 
         Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading WAAD.zip"
@@ -47,6 +48,7 @@ configuration UserDesktopConfig
         Test-Path C:\Windows\Temp\WAAD.zip
       }
     }
+
     Archive UnzipWAADFiles {
       Ensure      = "Present"
       Destination = "C:\WAAD"
@@ -54,12 +56,7 @@ configuration UserDesktopConfig
       Force       = $true
       DependsOn   = "[Script]DownloadWAADFiles"
     }
-    File HideWAAD {
-      Type            = "Directory"
-      Attributes      = 'Hidden'
-      DestinationPath = "C:\WAAD"
-      DependsOn       = "[Archive]UnzipWAADFiles"
-    }
+
     Script SetTimeZone {
       SetScript  = { 
         Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[SetTimeZone] Running.."
@@ -68,15 +65,18 @@ configuration UserDesktopConfig
       GetScript  = { @{} }
       TestScript = { $false }
     }
+
     WindowsFeature DotNetCore {
       Ensure = "Present" 
       Name   = "Net-Framework-Core"
     }
+    
     WindowsFeature RemoteDesktop
     {
         Ensure = "Present" 
         Name = "RDS-RD-Server"
     }
+    
     Script InstallxComputerManagament {
       SetScript  = {
         Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
@@ -85,6 +85,7 @@ configuration UserDesktopConfig
       GetScript  = { @{} }
       TestScript = { $false }
     }
+    
     Group AddRDPAccessGroup {
       GroupName            = 'Remote Desktop Users'   
       Ensure               = 'Present'             
@@ -92,6 +93,7 @@ configuration UserDesktopConfig
       Credential           = $DomainCreds    
       PsDscRunAsCredential = $DomainCreds
     }
+    
     Group AddToAdmins {
       GroupName            = 'Administrators'   
       Ensure               = 'Present'             
@@ -99,6 +101,7 @@ configuration UserDesktopConfig
       Credential           = $DomainCreds    
       PsDscRunAsCredential = $DomainCreds
     }
+    
     LocalConfigurationManager {
       ConfigurationMode  = 'ApplyOnly'
       RebootNodeIfNeeded = $true
