@@ -28,6 +28,9 @@
   
   [Parameter(Mandatory)]
   [System.Management.Automation.PSCredential]$SQLAccountCreds,
+  
+  [Parameter(Mandatory)]
+  [System.Management.Automation.PSCredential]$HoneyPotAccountCreds,
 
   [Parameter(Mandatory)]
   [string]$gMSAAccountUsername,
@@ -54,7 +57,8 @@
   [System.Management.Automation.PSCredential]$DomainServerAdminCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($ServerAdminCreds.UserName)", $ServerAdminCreds.Password)
   [System.Management.Automation.PSCredential]$DomainHelperAccountCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($HelperAccountCreds.UserName)", $HelperAccountCreds.Password)
   [System.Management.Automation.PSCredential]$DomainSQLAccountCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($SQLAccountCreds.UserName)", $SQLAccountCreds.Password)
-  
+  [System.Management.Automation.PSCredential]$DomainHoneyPotAccountCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($HoneyPotAccountCreds.UserName)", $HoneyPotAccountCreds.Password)
+
   $AdminUserName = $Admincreds.UserName
   $BackupUserUsername = $BackupUserCreds.UserName
   $HelpDeskUserUsername = $HelpDeskUserCreds.UserName
@@ -62,6 +66,7 @@
   $ServerAdminUsername = $ServerAdminCreds.UserName
   $HelperAccountUsername = $HelperAccountCreds.UserName
   $SQLAccountUsername = $SQLAccountCreds.UserName
+  $HoneyPotAccountUsername = $HoneyPotAccountCreds.UserName
   
   $Interface=Get-NetAdapter | Where-Object Name -Like "Ethernet*" | Select-Object -First 1
   $InterfaceAlias=$($Interface.Name)
@@ -352,6 +357,38 @@
         Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
     }
+    xADUser HoneyPotServiceAccount
+    {
+        DomainName = $DomainName
+        DomainAdministratorCredential = $DomainAdminCreds
+        UserName = $HoneyPotAccountUsername
+        Password = $DomainHoneyPotAccountCreds
+        ServicePrincipalNames = "MSSQLSvc/sql01.$($DomainName)","MSSQLSvc/sql01.$($DomainName):1433"
+        Ensure = "Present"
+        Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
+        DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
+    }
+    Script SetHoneyPotAdminCount
+    {
+      SetScript =  { 
+        Get-ADUser -Identity $using:HoneyPotAccountUsername -Credential $using:DomainAdminCreds | Set-ADUser -Add @{adminCount=1} -Credential $using:DomainAdminCreds
+        Write-Verbose -Verbose "Set $($using:HoneyPotAccountUsername) adminCount" 
+      }
+      GetScript = {            
+        Return @{            
+            Result = [string]$((Get-ADUser -Identity $using:HoneyPotAccountUsername -Credential $using:DomainAdminCreds -Properties adminCount).adminCount)            
+        }            
+      }
+      TestScript = { 
+        if ( (Get-ADUser -Identity $using:HoneyPotAccountUsername -Credential $using:DomainAdminCreds -Properties adminCount).adminCount -eq 1) {
+          return $false
+        }
+        else {
+          return $true
+        }
+      }
+      DependsOn = "[xADUser]HoneyPotServiceAccount"
+    }
     xADManagedServiceAccount gMSAServiceAccount
     {
         Ensure = "Present"
@@ -362,18 +399,7 @@
         Members = "$($ServerAdminUsername)"
         DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU", "[xADUser]ServerAdmin"
     }
-    # xADServicePrincipalName 'http/fs'
-    # {
-    #     ServicePrincipalName = "http/fs.$($using:DomainName)"
-    #     Account              = "$($using:gMSAAccountUsername)$"
-    #     DependsOn = "[xADManagedServiceAccount]gMSAServiceAccount"
-    # }
-    # xADServicePrincipalName 'host/fs'
-    # {
-    #     ServicePrincipalName = "host/fs.$($using:DomainName)"
-    #     Account              = "$($using:gMSAAccountUsername)$"
-    #     DependsOn = "[xADManagedServiceAccount]gMSAServiceAccount"
-    # }
+    # Adding a SPN to a gMSA is not currently supported by xADManagedServiceAccount
     Script SetgMSAServicePrincipalNames
     {
       SetScript =  { 
@@ -400,8 +426,8 @@
     {
       GroupName = "Domain Admins"
       Ensure = 'Present'
-      MembersToInclude =  $ServerAdminUsername, "StudentAdmin"
-      DependsOn = "[xADUser]ServerAdmin", "[xADUser]StudentAdmin"
+      MembersToInclude =  $ServerAdminUsername, "StudentAdmin", $SQLAccountUsername
+      DependsOn = "[xADUser]ServerAdmin", "[xADUser]StudentAdmin", "[xADUser]SQLServiceAccount"
     }
     # xADGroup SchemaAdmins
     # {
@@ -454,6 +480,17 @@
       MembersToInclude = $BackupUserUsername, $HelperAccountUsername, $SQLAccountUsername
       Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
       DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser", "[xADUser]SQLServiceAccount"
+    }
+    xADGroup SuperAdmins
+    {
+      GroupName = "SuperAdmins"
+      GroupScope = "Global"
+      Category = "Security"
+      Description = "Super...Admins"
+      Ensure = 'Present'
+      MembersToInclude = $HoneyPotAccountUsername
+      Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
+      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]HoneyPotServiceAccount"
     }
     xTimeZone SetTimezone
     {

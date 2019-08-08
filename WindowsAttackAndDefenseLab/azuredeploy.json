@@ -377,6 +377,10 @@
                   "UserName": "[parameters('SQLAccountUserName')]",
                   "Password": "PrivateSettingsRef:SQLAccountPassword"
                 },
+                "HoneyPotAccountCreds": {
+                  "UserName": "[parameters('HoneyPotAccountUserName')]",
+                  "Password": "PrivateSettingsRef:HoneyPotAccountPassword"
+                },
                 "gMSAAccountUsername": "[parameters('gMSAAccountUsername')]",
                 "dcClassFolderUrl": "[parameters('DCClassFolderUrl')]",
                 "waadFolderUrl": "[parameters('WAADFolderUrl')]",
@@ -391,7 +395,8 @@
                 "AccountingUserPassword": "[parameters('AccountingUserPassword')]",
                 "ServerAdminPassword": "[parameters('ServerAdminPassword')]",
                 "HelperAccountPassword": "[parameters('HelperAccountPassword')]",
-                "SQLAccountPassword": "[parameters('SQLAccountPassword')]"
+                "SQLAccountPassword": "[parameters('SQLAccountPassword')]",
+                "HoneyPotAccountPassword": "[parameters('HoneyPotAccountPassword')]"
               }
             }
           }
