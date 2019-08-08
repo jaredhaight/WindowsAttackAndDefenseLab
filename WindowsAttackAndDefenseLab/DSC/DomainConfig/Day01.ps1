@@ -363,7 +363,7 @@
         DomainAdministratorCredential = $DomainAdminCreds
         UserName = $HoneyPotAccountUsername
         Password = $DomainHoneyPotAccountCreds
-        ServicePrincipalNames = "MSSQLSvc/sql01.$($DomainName)","MSSQLSvc/sql01.$($DomainName):1433"
+        ServicePrincipalNames = "MSSQLSvc/honeypot.$($DomainName)","MSSQLSvc/honeypot.$($DomainName):1433"
         Ensure = "Present"
         Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
