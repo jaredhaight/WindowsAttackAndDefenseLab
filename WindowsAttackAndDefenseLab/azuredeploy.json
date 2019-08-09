@@ -59,6 +59,12 @@
     "SQLAccountPassword": {
       "type": "securestring"
     },
+    "HoneyPotAccountUsername": {
+      "type": "string"
+    },
+    "HoneyPotAccountPassword": {
+      "type": "securestring"
+    },
     "gMSAAccountUsername": {
       "type": "string",
       "defaultValue": "_ADFS"
