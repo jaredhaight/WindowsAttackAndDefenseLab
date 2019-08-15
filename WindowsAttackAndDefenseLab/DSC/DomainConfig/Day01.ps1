@@ -327,10 +327,10 @@
         DomainAdministratorCredential = $DomainAdminCreds
         UserName = $SQLAdminUsername
         Password = $DomainSQLAdminCreds
-        ServicePrincipalNames = "MSSQLSvc/sql01.$($DomainName)","MSSQLSvc/sql01.$($DomainName):1433"
+        ServicePrincipalNames = "MSSQLSvc/sqltest01.$($DomainName)","MSSQLSvc/sqltest01.$($DomainName):1433"
         Ensure = "Present"
         Path = "OU=Staff,OU=Production,DC=ad,DC=waad,DC=training"
-        DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
+        DependsOn = "[xADOrganizationalUnit]ProductionStaffOU"
     }
     xADUser BackupUser
     {
