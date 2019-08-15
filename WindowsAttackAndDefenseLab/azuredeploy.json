@@ -1098,7 +1098,8 @@
           "modulesUrl": "[concat(parameters('dscUrl'), 'AdminDesktopConfig.zip')]",
           "configurationFunction": "adminDesktopConfig.ps1\\AdminDesktopConfig",
           "Properties": { 
-            "waadFolderUrl": "[parameters('WAADFolderUrl')]"
+            "waadFolderUrl": "[parameters('WAADFolderUrl')]",
+            "DomainName": "[parameters('domainName')]",
           }
         }
       },

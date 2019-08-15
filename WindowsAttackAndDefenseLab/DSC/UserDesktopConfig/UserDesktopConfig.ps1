@@ -97,7 +97,7 @@ configuration UserDesktopConfig
     Group AddToAdmins {
       GroupName            = 'Administrators'   
       Ensure               = 'Present'             
-      MembersToInclude     = "$DomainName\HelpDeskUsers", "$DomainName\Accounting Users", "$DomainName\ServiceAccounts"
+      MembersToInclude     = "$DomainName\HelpDeskUsers", "$DomainName\Accounting Users", "$DomainName\ServiceAccounts", "$DomainName\WorkstationAdmins"
       Credential           = $DomainCreds    
       PsDscRunAsCredential = $DomainCreds
     }

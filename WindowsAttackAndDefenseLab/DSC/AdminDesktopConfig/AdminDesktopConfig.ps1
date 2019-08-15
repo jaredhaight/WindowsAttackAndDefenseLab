@@ -2,6 +2,8 @@ configuration AdminDesktopConfig
 { 
   Param(
     [Parameter(Mandatory)]
+    [String]$DomainName,
+    [Parameter(Mandatory)]
     [string]$waadFolderUrl
   )
   Import-DscResource -ModuleName PSDesiredStateConfiguration
@@ -41,6 +43,13 @@ configuration AdminDesktopConfig
     {
         Ensure = "Present" 
         Name = "RDS-RD-Server"
+    }
+    Group AddToAdmins {
+      GroupName            = 'Administrators'   
+      Ensure               = 'Present'             
+      MembersToInclude     = "$DomainName\HelpDeskUsers", "$DomainName\Accounting Users", "$DomainName\ServiceAccounts", "$DomainName\WorkstationAdmins"
+      Credential           = $DomainCreds    
+      PsDscRunAsCredential = $DomainCreds
     }
     LocalConfigurationManager {
       ConfigurationMode  = 'ApplyOnly'

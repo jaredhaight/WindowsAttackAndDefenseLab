@@ -352,50 +352,6 @@
         Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
     }
-    xADManagedServiceAccount gMSAServiceAccount
-    {
-        Ensure = "Present"
-        Credential = $DomainAdminCreds
-        ServiceAccountName = $gMSAAccountUsername
-        AccountType = "Group"
-        Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
-        Members = "$($ServerAdminUsername)"
-        DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU", "[xADUser]ServerAdmin"
-    }
-    # xADServicePrincipalName 'http/fs'
-    # {
-    #     ServicePrincipalName = "http/fs.$($using:DomainName)"
-    #     Account              = "$($using:gMSAAccountUsername)$"
-    #     DependsOn = "[xADManagedServiceAccount]gMSAServiceAccount"
-    # }
-    # xADServicePrincipalName 'host/fs'
-    # {
-    #     ServicePrincipalName = "host/fs.$($using:DomainName)"
-    #     Account              = "$($using:gMSAAccountUsername)$"
-    #     DependsOn = "[xADManagedServiceAccount]gMSAServiceAccount"
-    # }
-    Script SetgMSAServicePrincipalNames
-    {
-      SetScript =  { 
-        Get-ADServiceAccount -Identity $using:gMSAAccountUsername -Credential $using:DomainAdminCreds | Set-ADServiceAccount -ServicePrincipalNames @{Add="http/fs.$($using:DomainName)", "host/fs.$($using:DomainName)"} -Credential $using:DomainAdminCreds
-        Write-Verbose -Verbose "Set gMSA $($using:gMSAAccountUsername) ServicePrincipalNames" 
-      }
-      GetScript = {            
-        Return @{            
-            Result = [string]$((Get-ADServiceAccount -Identity $using:gMSAAccountUsername -Credential $using:DomainAdminCreds -Properties ServicePrincipalNames).ServicePrincipalNames)            
-        }            
-      }
-      
-      TestScript = { 
-        if ( (Get-ADServiceAccount -Identity $using:gMSAAccountUsername -Credential $using:DomainAdminCreds -Properties ServicePrincipalNames).ServicePrincipalNames -eq $null) {
-          return $false
-        }
-        else {
-          return $true
-        }
-      }
-      DependsOn = "[xADManagedServiceAccount]gMSAServiceAccount"
-    }
     xADGroup DomainAdmins
     {
       GroupName = "Domain Admins"
@@ -454,6 +410,17 @@
       MembersToInclude = $BackupUserUsername, $HelperAccountUsername, $SQLAccountUsername
       Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
       DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser", "[xADUser]SQLServiceAccount"
+    }
+    xADGroup WorkstationAdmins
+    {
+      GroupName = "WorkstationAdmins"
+      GroupScope = "Global"
+      Category = "Security"
+      Description = "Works on my box"
+      Ensure = 'Present'
+      MembersToInclude =  $SQLAccountUsername
+      Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
+      DependsOn = "[xADUser]SQLServiceAccount"
     }
     xTimeZone SetTimezone
     {
