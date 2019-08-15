@@ -53,10 +53,10 @@
     "HelperAccountPassword": {
       "type": "securestring"
     },
-    "SQLAccountUsername": {
+    "SQLAdminUsername": {
       "type": "string"
     },
-    "SQLAccountPassword": {
+    "SQLAdminPassword": {
       "type": "securestring"
     },
     "adAdminUsername": {
@@ -372,9 +372,9 @@
                   "UserName": "[parameters('HelperAccountUserName')]",
                   "Password": "PrivateSettingsRef:HelperAccountPassword"
                 },
-                "SQLAccountCreds": {
-                  "UserName": "[parameters('SQLAccountUserName')]",
-                  "Password": "PrivateSettingsRef:SQLAccountPassword"
+                "SQLAdminCreds": {
+                  "UserName": "[parameters('SQLAdminUserName')]",
+                  "Password": "PrivateSettingsRef:SQLAdminPassword"
                 },
                 "dcClassFolderUrl": "[parameters('DCClassFolderUrl')]",
                 "waadFolderUrl": "[parameters('WAADFolderUrl')]",
@@ -389,7 +389,7 @@
                 "AccountingUserPassword": "[parameters('AccountingUserPassword')]",
                 "ServerAdminPassword": "[parameters('ServerAdminPassword')]",
                 "HelperAccountPassword": "[parameters('HelperAccountPassword')]",
-                "SQLAccountPassword": "[parameters('SQLAccountPassword')]"
+                "SQLAdminPassword": "[parameters('SQLAdminPassword')]"
               }
             }
           }

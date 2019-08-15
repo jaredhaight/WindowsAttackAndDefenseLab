@@ -27,7 +27,7 @@
   [System.Management.Automation.PSCredential]$HelperAccountCreds,
   
   [Parameter(Mandatory)]
-  [System.Management.Automation.PSCredential]$SQLAccountCreds,
+  [System.Management.Automation.PSCredential]$SQLAdminCreds,
 
   [Parameter(Mandatory)]
   [string]$gMSAAccountUsername,
@@ -53,7 +53,7 @@
   [System.Management.Automation.PSCredential]$DomainAccountingUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($AccountingUserCreds.UserName)", $AccountingUserCreds.Password)
   [System.Management.Automation.PSCredential]$DomainServerAdminCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($ServerAdminCreds.UserName)", $ServerAdminCreds.Password)
   [System.Management.Automation.PSCredential]$DomainHelperAccountCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($HelperAccountCreds.UserName)", $HelperAccountCreds.Password)
-  [System.Management.Automation.PSCredential]$DomainSQLAccountCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($SQLAccountCreds.UserName)", $SQLAccountCreds.Password)
+  [System.Management.Automation.PSCredential]$DomainSQLAdminCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($SQLAdminCreds.UserName)", $SQLAdminCreds.Password)
   
   $AdminUserName = $Admincreds.UserName
   $BackupUserUsername = $BackupUserCreds.UserName
@@ -61,7 +61,7 @@
   $AccountingUserUsername = $AccountingUserCreds.UserName
   $ServerAdminUsername = $ServerAdminCreds.UserName
   $HelperAccountUsername = $HelperAccountCreds.UserName
-  $SQLAccountUsername = $SQLAccountCreds.UserName
+  $SQLAdminUsername = $SQLAdminCreds.UserName
   
   $Interface=Get-NetAdapter | Where-Object Name -Like "Ethernet*" | Select-Object -First 1
   $InterfaceAlias=$($Interface.Name)
@@ -320,7 +320,18 @@
         Ensure = "Present"
         Path = "OU=Staff,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionStaffOU"
-    }  
+    } 
+    xADUser SQLAdmin
+    {
+        DomainName = $DomainName
+        DomainAdministratorCredential = $DomainAdminCreds
+        UserName = $SQLAdminUsername
+        Password = $DomainSQLAdminCreds
+        ServicePrincipalNames = "MSSQLSvc/sql01.$($DomainName)","MSSQLSvc/sql01.$($DomainName):1433"
+        Ensure = "Present"
+        Path = "OU=Staff,OU=Production,DC=ad,DC=waad,DC=training"
+        DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
+    }
     xADUser BackupUser
     {
         DomainName = $DomainName
@@ -337,17 +348,6 @@
         DomainAdministratorCredential = $DomainAdminCreds
         UserName = $HelperAccountUsername
         Password = $DomainHelperAccountCreds
-        Ensure = "Present"
-        Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
-        DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
-    }
-    xADUser SQLServiceAccount
-    {
-        DomainName = $DomainName
-        DomainAdministratorCredential = $DomainAdminCreds
-        UserName = $SQLAccountUsername
-        Password = $DomainSQLAccountCreds
-        ServicePrincipalNames = "MSSQLSvc/sql01.$($DomainName)","MSSQLSvc/sql01.$($DomainName):1433"
         Ensure = "Present"
         Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
@@ -407,9 +407,9 @@
       Category = "Security"
       Description = "Robots that do our bidding"
       Ensure = 'Present'
-      MembersToInclude = $BackupUserUsername, $HelperAccountUsername, $SQLAccountUsername
+      MembersToInclude = $BackupUserUsername, $HelperAccountUsername
       Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
-      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser", "[xADUser]SQLServiceAccount"
+      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser", "[xADUser]SQLAdmin"
     }
     xADGroup WorkstationAdmins
     {
@@ -418,9 +418,9 @@
       Category = "Security"
       Description = "Works on my box"
       Ensure = 'Present'
-      MembersToInclude =  $SQLAccountUsername
+      MembersToInclude =  $SQLAdminUsername
       Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
-      DependsOn = "[xADUser]SQLServiceAccount"
+      DependsOn = "[xADUser]SQLAdmin"
     }
     xTimeZone SetTimezone
     {
