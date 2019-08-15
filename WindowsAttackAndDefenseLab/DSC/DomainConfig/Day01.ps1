@@ -30,9 +30,6 @@
   [System.Management.Automation.PSCredential]$SQLAdminCreds,
 
   [Parameter(Mandatory)]
-  [string]$gMSAAccountUsername,
-
-  [Parameter(Mandatory)]
   [string]$dcClassFolderUrl,
 
   [Parameter(Mandatory)]
