@@ -215,6 +215,9 @@
     },
     "HomeClassFolderUrl": {
       "type": "string"
+    },
+    "HomeAppsFolderUrl": {
+      "type": "string"
     }
   },
   "variables": {
@@ -679,7 +682,8 @@
               "UserName": "[parameters('adAdminUsername')]",
               "Password": "PrivateSettingsRef:AdminPassword"
             },
-            "homeClassFolderUrl": "[parameters('HomeClassFolderUrl')]"
+            "homeClassFolderUrl": "[parameters('HomeClassFolderUrl')]",
+            "homeAppsFolderUrl": "[parameters('HomeAppsFolderUrl')]"
           }
         },
         "protectedSettings": {

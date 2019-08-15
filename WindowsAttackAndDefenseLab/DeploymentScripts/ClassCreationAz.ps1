@@ -60,6 +60,7 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     UserDesktopClassFolderUrl = $TemplateFileParams.Parameters.UserDesktopClassFolderUrl.value
     LinuxClassFolderUrl    = $TemplateFileParams.Parameters.LinuxClassFolderUrl.value
     HomeClassFolderUrl     = $TemplateFileParams.Parameters.HomeClassFolderUrl.value
+    HomeAppsFolderUrl     = $TemplateFileParams.Parameters.HomeAppsFolderUrl.value
     WAADFolderUrl          = $TemplateFileParams.Parameters.WAADFolderUrl.value
 
   }
