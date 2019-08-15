@@ -1099,7 +1099,7 @@
           "configurationFunction": "adminDesktopConfig.ps1\\AdminDesktopConfig",
           "Properties": { 
             "waadFolderUrl": "[parameters('WAADFolderUrl')]",
-            "DomainName": "[parameters('domainName')]",
+            "DomainName": "[parameters('domainName')]"
           }
         }
       },
