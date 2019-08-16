@@ -4,10 +4,13 @@ configuration AdminDesktopConfig
     [Parameter(Mandatory)]
     [String]$DomainName,
     [Parameter(Mandatory)]
+    [System.Management.Automation.PSCredential]$Admincreds,
+    [Parameter(Mandatory)]
     [string]$waadFolderUrl
   )
   Import-DscResource -ModuleName PSDesiredStateConfiguration
-
+  [System.Management.Automation.PSCredential]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
+  
   Node "admindesktop" {
 
     Script DownloadWAADFiles {

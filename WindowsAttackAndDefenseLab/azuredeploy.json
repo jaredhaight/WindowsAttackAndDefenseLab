@@ -1094,12 +1094,20 @@
         "typeHandlerVersion": "2.19",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          
           "modulesUrl": "[concat(parameters('dscUrl'), 'AdminDesktopConfig.zip')]",
           "configurationFunction": "adminDesktopConfig.ps1\\AdminDesktopConfig",
-          "Properties": { 
-            "waadFolderUrl": "[parameters('WAADFolderUrl')]",
-            "DomainName": "[parameters('domainName')]"
+          "Properties": {
+            "DomainName": "[parameters('domainName')]",
+            "AdminCreds": {
+              "UserName": "[parameters('adAdminUsername')]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            },
+            "waadFolderUrl": "[parameters('WAADFolderUrl')]"
+          }
+        },
+        "protectedSettings": {
+          "Items": {
+            "AdminPassword": "[parameters('studentPassword')]"
           }
         }
       },
