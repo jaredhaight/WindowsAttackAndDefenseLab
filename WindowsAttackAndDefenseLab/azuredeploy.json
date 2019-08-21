@@ -376,11 +376,10 @@
                   "UserName": "[parameters('HelperAccountUserName')]",
                   "Password": "PrivateSettingsRef:HelperAccountPassword"
                 },
-                "SQLAccountCreds": {
+                "SQLAdminCreds": {
                   "UserName": "[parameters('SQLAccountUserName')]",
                   "Password": "PrivateSettingsRef:SQLAccountPassword"
                 },
-                "gMSAAccountUsername": "[parameters('gMSAAccountUsername')]",
                 "dcClassFolderUrl": "[parameters('DCClassFolderUrl')]",
                 "waadFolderUrl": "[parameters('WAADFolderUrl')]",
                 "linuxNicIpAddress": "[parameters('linuxNicIpAddress')]"

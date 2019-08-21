@@ -27,7 +27,7 @@
   [System.Management.Automation.PSCredential]$HelperAccountCreds,
   
   [Parameter(Mandatory)]
-  [System.Management.Automation.PSCredential]$SQLAccountCreds,
+  [System.Management.Automation.PSCredential]$SQLAdminCreds,
 
   [Parameter(Mandatory)]
   [string]$gMSAAccountUsername,
