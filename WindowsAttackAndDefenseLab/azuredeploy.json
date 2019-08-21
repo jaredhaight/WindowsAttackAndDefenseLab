@@ -53,15 +53,11 @@
     "HelperAccountPassword": {
       "type": "securestring"
     },
-    "SQLAccountUsername": {
+    "SQLAdminUsername": {
       "type": "string"
     },
-    "SQLAccountPassword": {
+    "SQLAdminPassword": {
       "type": "securestring"
-    },
-    "gMSAAccountUsername": {
-      "type": "string",
-      "defaultValue": "_ADFS"
     },
     "adAdminUsername": {
       "type": "string",
@@ -377,8 +373,13 @@
                   "Password": "PrivateSettingsRef:HelperAccountPassword"
                 },
                 "SQLAdminCreds": {
+<<<<<<< HEAD
                   "UserName": "[parameters('SQLAccountUserName')]",
                   "Password": "PrivateSettingsRef:SQLAccountPassword"
+=======
+                  "UserName": "[parameters('SQLAdminUserName')]",
+                  "Password": "PrivateSettingsRef:SQLAdminPassword"
+>>>>>>> bd0254a113c9aed90f5adc10cc239964d8a78e63
                 },
                 "dcClassFolderUrl": "[parameters('DCClassFolderUrl')]",
                 "waadFolderUrl": "[parameters('WAADFolderUrl')]",
@@ -393,7 +394,7 @@
                 "AccountingUserPassword": "[parameters('AccountingUserPassword')]",
                 "ServerAdminPassword": "[parameters('ServerAdminPassword')]",
                 "HelperAccountPassword": "[parameters('HelperAccountPassword')]",
-                "SQLAccountPassword": "[parameters('SQLAccountPassword')]"
+                "SQLAdminPassword": "[parameters('SQLAdminPassword')]"
               }
             }
           }
@@ -1098,11 +1099,20 @@
         "typeHandlerVersion": "2.19",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          
           "modulesUrl": "[concat(parameters('dscUrl'), 'AdminDesktopConfig.zip')]",
           "configurationFunction": "adminDesktopConfig.ps1\\AdminDesktopConfig",
-          "Properties": { 
+          "Properties": {
+            "DomainName": "[parameters('domainName')]",
+            "AdminCreds": {
+              "UserName": "[parameters('adAdminUsername')]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            },
             "waadFolderUrl": "[parameters('WAADFolderUrl')]"
+          }
+        },
+        "protectedSettings": {
+          "Items": {
+            "AdminPassword": "[parameters('studentPassword')]"
           }
         }
       },
