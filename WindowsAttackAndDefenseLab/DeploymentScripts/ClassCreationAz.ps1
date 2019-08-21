@@ -51,13 +51,8 @@ function Invoke-CreateWindowsAttackAndDefenseLab {
     ServerAdminPassword    = $TemplateFileParams.Parameters.ServerAdminPassword.value
     HelperAccountUsername  = $TemplateFileParams.Parameters.HelperAccountUsername.value
     HelperAccountPassword  = $TemplateFileParams.Parameters.HelperAccountPassword.value
-<<<<<<< HEAD
-    SQLAccountUsername     = $TemplateFileParams.Parameters.SQLAccountUsername.value
-    SQLAccountPassword     = $TemplateFileParams.Parameters.SQLAccountPassword.value
-=======
     SQLAdminUsername     = $TemplateFileParams.Parameters.SQLAdminUsername.value
     SQLAdminPassword     = $TemplateFileParams.Parameters.SQLAdminPassword.value
->>>>>>> bd0254a113c9aed90f5adc10cc239964d8a78e63
     LinuxAdminUsername     = $TemplateFileParams.Parameters.LinuxAdminUsername.value
     SSHKeyData             = $TemplateFileParams.Parameters.SSHKeyData.value
     DCClassFolderUrl       = $TemplateFileParams.Parameters.DCClassFolderUrl.value
