@@ -373,13 +373,8 @@
                   "Password": "PrivateSettingsRef:HelperAccountPassword"
                 },
                 "SQLAdminCreds": {
-<<<<<<< HEAD
-                  "UserName": "[parameters('SQLAccountUserName')]",
-                  "Password": "PrivateSettingsRef:SQLAccountPassword"
-=======
                   "UserName": "[parameters('SQLAdminUserName')]",
                   "Password": "PrivateSettingsRef:SQLAdminPassword"
->>>>>>> bd0254a113c9aed90f5adc10cc239964d8a78e63
                 },
                 "dcClassFolderUrl": "[parameters('DCClassFolderUrl')]",
                 "waadFolderUrl": "[parameters('WAADFolderUrl')]",
