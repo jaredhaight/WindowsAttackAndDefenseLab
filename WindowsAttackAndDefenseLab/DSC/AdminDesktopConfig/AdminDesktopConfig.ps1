@@ -2,11 +2,16 @@ configuration AdminDesktopConfig
 { 
   Param(
     [Parameter(Mandatory)]
+    [String]$DomainName,
+    [Parameter(Mandatory)]
+    [System.Management.Automation.PSCredential]$Admincreds,
+    [Parameter(Mandatory)]
     [string]$waadFolderUrl
   )
   Import-DscResource -ModuleName PSDesiredStateConfiguration
-
-  Node "admindesktop" {
+  [System.Management.Automation.PSCredential]$DomainCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($Admincreds.UserName)", $Admincreds.Password)
+  
+  Node localhost {
 
     Script DownloadWAADFiles {
       SetScript  = { 
@@ -41,6 +46,13 @@ configuration AdminDesktopConfig
     {
         Ensure = "Present" 
         Name = "RDS-RD-Server"
+    }
+    Group AddToAdmins {
+      GroupName            = 'Administrators'   
+      Ensure               = 'Present'             
+      MembersToInclude     = "$DomainName\WorkstationAdmins"
+      Credential           = $DomainCreds    
+      PsDscRunAsCredential = $DomainCreds
     }
     LocalConfigurationManager {
       ConfigurationMode  = 'ApplyOnly'
