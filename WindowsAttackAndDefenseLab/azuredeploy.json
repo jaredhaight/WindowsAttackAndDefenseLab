@@ -79,10 +79,6 @@
       "type": "string",
       "defaultValue": "Standard_B2ms"
     },
-    "adDscFile":{
-      "type": "string",
-      "defaultValue": "Day01.ps1"
-    },
     "homeVmName": {
       "type": "string",
       "defaultValue": "home"
@@ -361,8 +357,8 @@
             "typeHandlerVersion": "2.19",
             "autoUpgradeMinorVersion": true,
             "settings": {
-              "ModulesUrl": "[concat(parameters('dscUrl'), 'DomainConfig_BETA.zip')]",
-              "ConfigurationFunction": "[concat(parameters('adDscFile'), '\\DomainConfig')]",
+              "ModulesUrl": "[concat(parameters('dscUrl'), 'DomainConfig.zip')]",
+              "ConfigurationFunction": "DomainConfig.ps1\\DomainConfig')",
               "Properties": {
                 "DomainName": "[parameters('domainName')]",
                 "AdminCreds": {

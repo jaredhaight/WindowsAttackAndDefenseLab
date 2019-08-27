@@ -20,14 +20,20 @@
   [Parameter(Mandatory)]
   [System.Management.Automation.PSCredential]$AccountingUserCreds,
 
-  [Parameter(Mandatory)]
+    [Parameter(Mandatory)]
   [System.Management.Automation.PSCredential]$ServerAdminCreds,
-
+  
   [Parameter(Mandatory)]
   [System.Management.Automation.PSCredential]$HelperAccountCreds,
+  
+  [Parameter(Mandatory)]
+  [System.Management.Automation.PSCredential]$SQLAdminCreds,
 
   [Parameter(Mandatory)]
-  [string]$classUrl,
+  [string]$dcClassFolderUrl,
+
+  [Parameter(Mandatory)]
+  [string]$waadFolderUrl,
 
   [Parameter(Mandatory)]
   [string]$linuxNicIpAddress,
@@ -44,13 +50,15 @@
   [System.Management.Automation.PSCredential]$DomainAccountingUserCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($AccountingUserCreds.UserName)", $AccountingUserCreds.Password)
   [System.Management.Automation.PSCredential]$DomainServerAdminCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($ServerAdminCreds.UserName)", $ServerAdminCreds.Password)
   [System.Management.Automation.PSCredential]$DomainHelperAccountCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($HelperAccountCreds.UserName)", $HelperAccountCreds.Password)
-
+  [System.Management.Automation.PSCredential]$DomainSQLAdminCreds = New-Object System.Management.Automation.PSCredential ("${DomainName}\$($SQLAdminCreds.UserName)", $SQLAdminCreds.Password)
+  
   $AdminUserName = $Admincreds.UserName
   $BackupUserUsername = $BackupUserCreds.UserName
   $HelpDeskUserUsername = $HelpDeskUserCreds.UserName
   $AccountingUserUsername = $AccountingUserCreds.UserName
   $ServerAdminUsername = $ServerAdminCreds.UserName
   $HelperAccountUsername = $HelperAccountCreds.UserName
+  $SQLAdminUsername = $SQLAdminCreds.UserName
   
   $Interface=Get-NetAdapter | Where-Object Name -Like "Ethernet*" | Select-Object -First 1
   $InterfaceAlias=$($Interface.Name)
@@ -60,15 +68,15 @@
     Script DownloadClassFiles
     {
         SetScript =  { 
-            $file = $using:classUrl + 'DC.zip'
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadClassFiles] Downloading $file"
-            Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\Class.zip
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadClassFiles] Downloading DC.zip"
+            Invoke-WebRequest -Uri $using:dcClassFolderUrl -OutFile C:\Windows\Temp\Class.zip
         }
         GetScript =  { @{} }
         TestScript = { 
             Test-Path C:\Windows\Temp\Class.zip
          }
     }
+
     Archive UnzipClassFiles
     {
         Ensure = "Present"
@@ -77,19 +85,19 @@
         Force = $true
         DependsOn = "[Script]DownloadClassFiles"
     }
-    
+
     Script DownloadWAADFiles
     {
-        SetScript =  { 
-            $file = $using:classUrl + 'WAAD.zip'
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading $file"
-            Invoke-WebRequest -Uri $file -OutFile C:\Windows\Temp\WAAD.zip
+        SetScript =  {
+            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading WAAD.zip"
+            Invoke-WebRequest -Uri $using:waadFolderUrl -OutFile C:\Windows\Temp\WAAD.zip
         }
         GetScript =  { @{} }
         TestScript = { 
             Test-Path C:\Windows\Temp\WAAD.zip
          }
     }
+
     Archive UnzipWAADFiles
     {
         Ensure = "Present"
@@ -97,7 +105,26 @@
         Path = "C:\Windows\Temp\WAAD.zip"
         Force = $true
         DependsOn = "[Script]DownloadWAADFiles"
-    }    
+    }
+
+    File NETSourceFolder {
+      Type = "directory"
+      DestinationPath = "C:\NETSource"
+      Ensure = "Present"
+    }
+
+    Script DotNet351CabDownload {
+      SetScript = {            
+          Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[DownloadWAADFiles] Downloading .NET cab"
+          Invoke-WebRequest -Uri "http://www.waad.training/microsoft-windows-netfx3-ondemand-package.cab" -OutFile "C:\NETSource\microsoft-windows-netfx3-ondemand-package.cab"
+      }
+      GetScript =  { @{} }
+      TestScript = {
+          Test-Path "C:\NETSource\microsoft-windows-netfx3-ondemand-package.cab"
+      }
+      DependsOn = "[File]NETSourceFolder"
+    }
+
     Script ImportGPOs
     {
         SetScript =  {
@@ -105,31 +132,16 @@
           Try {
             New-GPO -Name "WAAD Default"
             New-GPO -Name "Student Computers"
-            New-GPO -Name "Audit Policy"
-            New-GPO -Name "Command Line Logging"
-            New-GPO -Name "PowerShell Logging"
-            New-GPO -Name "Windows Event Forwarding"
-            New-GPO -Name "Restrict Network Logons"
             New-GPO -Name "Disable Firewall"
             New-GPO -Name "Shared Folder"
             Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{FF68FA65-A8D6-448D-87E5-6140373380CF}' -TargetName "Disable Firewall"
             Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{BD3497A3-0BBC-4F59-8B26-F54C6CA6FD07}' -TargetName "Shared Folder"
             Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{AC5D004D-2C93-46AB-A1F8-2D6A64CF491F}' -TargetName "WAAD Default"
-            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{D8BF6BAB-A17B-4673-8F2C-9EAFDDC5A236}'-TargetName "Student Computers"
-            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{4C6EB35D-10D8-468D-B02A-6CB9660F7D74}' -TargetName "Audit Policy"
-            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{D85D37F5-37DA-4FED-87E9-F91580F8D980}' -TargetName "Command Line Logging"
-            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{18073D21-902D-4FA0-A696-21AEDAD66244}' -TargetName "Windows Event Forwarding"
-            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{B4F0C06E-B982-4679-A46F-A625759B669B}' -TargetName "Restrict Network Logons"
-            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{772B1393-475F-47BC-938F-6BDBDABAB3F0}' -TargetName "PowerShell Logging"
+            Import-GPO -Path "C:\WAAD\GPOs" -BackupId '{9FF1FF6F-FB61-4961-A30B-77148F45B36B}'-TargetName "Student Computers"
             New-GPLink -Name "Disable Firewall" -Target "OU=Domain Controllers,DC=ad,DC=waad,DC=training"
             New-GPLink -Name "Disable Firewall" -Target "OU=Production,DC=AD,DC=WAAD,DC=TRAINING"
             New-GPLink -Name "Shared Folder" -Target "OU=Production,DC=AD,DC=WAAD,DC=TRAINING"
             New-GPLink -Name "WAAD Default" -Target "DC=AD,DC=WAAD,DC=TRAINING"
-            New-GPLink -Name "Audit Policy" -Target "DC=AD,DC=WAAD,DC=TRAINING"
-            New-GPLink -Name "Command Line Logging" -Target "DC=AD,DC=WAAD,DC=TRAINING"
-            New-GPLink -Name "PowerShell Logging" -Target "DC=AD,DC=WAAD,DC=TRAINING"
-            New-GPLink -Name "Windows Event Forwarding"-Target "DC=AD,DC=WAAD,DC=TRAINING"
-            New-GPLink -Name "Restrict Network Logons"-Target "OU=Production,DC=AD,DC=WAAD,DC=TRAINING"
             New-GPLink -Name "Student Computers" -Target "OU=Computers,OU=Class,DC=AD,DC=WAAD,DC=TRAINING"
           }
           Catch {
@@ -141,33 +153,21 @@
         GetScript =  { @{} }
         TestScript = { try {Get-GPO -Name "WAAD Default2" -ErrorAction Stop | Out-null; return $true} catch { $false } }
         DependsOn = "[Archive]UnzipClassFiles","[xADOrganizationalUnit]ProductionServersOU","[xADOrganizationalUnit]ClassComputersOU"
-    }    
-    Script SetupWEC
-    {
-        SetScript =  {
-          Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[ImportGPOs] Running.." 
-          Try {
-            wecutil qc /q
-            wecutil cs C:\Class\Subscriptions\PowerShell.xml
-            wecutil cs C:\Class\Subscriptions\Processes.xml
-            wecutil cs C:\Class\Subscriptions\WindowsDefender.xml
-            wecutil cs C:\Class\Subscriptions\SecurityLogCleared.xml
-          }
-          Catch {
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[SetupWEC] Failed.."
-            $exception = $error[0].Exception
-            Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[SetupWEC] Error: $exception"
-          }
-        }
-        GetScript =  { @{} }
-        TestScript = { $false }
-        DependsOn = "[Script]ImportGPOs"
     }
+
     WindowsFeature DNS 
     { 
       Ensure = "Present" 
       Name = "DNS"		
     }
+
+    WindowsFeature DotNetCore 
+    {
+      Ensure = "Present" 
+      Name   = "Net-Framework-Core"
+      DependsOn = "[Script]DotNet351CabDownload"
+    }
+    
     xDnsRecord Pwnbox
     {
         Name = "pwnbox"
@@ -186,7 +186,9 @@
         Write-Verbose -Verbose "Enabling DNS client diagnostics" 
       }
       GetScript =  { @{} }
-      TestScript = { $false }
+      TestScript = {
+        (Get-DnsServerDiagnostics).Queries
+      }
       DependsOn = "[WindowsFeature]DNS"
     }
 
@@ -204,30 +206,12 @@
       DependsOn = "[WindowsFeature]DNS"
     }
 
-    xWaitforDisk Disk2
-    {
-      DiskNumber = 2
-      RetryIntervalSec =$RetryIntervalSec
-      RetryCount = $RetryCount
-    }
-
-    cDiskNoRestart ADDataDisk
-    {
-      DiskNumber = 2
-      DriveLetter = "F"
-    }
-
     WindowsFeature ADDSInstall 
     { 
       Ensure = "Present" 
       Name = "AD-Domain-Services"
-      DependsOn="[cDiskNoRestart]ADDataDisk"
     } 
-    WindowsFeature DotNetCore 
-    {
-      Ensure = "Present" 
-      Name   = "Net-Framework-Core"
-    }
+
     xADDomain FirstDS 
     {
       DomainName = $DomainName
@@ -235,6 +219,7 @@
       SafemodeAdministratorPassword = $DomainAdminCreds
       DependsOn = "[WindowsFeature]ADDSInstall"
     } 
+
     xWaitForADDomain DscForestWait
     {
         DomainName = $DomainName
@@ -243,6 +228,15 @@
         RetryIntervalSec = $RetryIntervalSec
         DependsOn = "[xADDomain]FirstDS"
     }
+
+    xADKDSKey 'KDSRootKey'
+    {
+      Ensure = "Present"
+      EffectiveTime = "1/1/2019 13:00"
+      AllowUnsafeEffectiveTime = $true
+      DependsOn = "[xWaitForADDomain]DscForestWait"
+    }
+
     xADOrganizationalUnit ProductionOU
     {
       Name = "Production"
@@ -250,6 +244,7 @@
       Ensure = 'Present'
       DependsOn = "[xWaitForADDomain]DscForestWait"
     }
+
     xADOrganizationalUnit ProductionStaffOU
     {
       Name = "Staff"
@@ -257,6 +252,7 @@
       Ensure = 'Present'
       DependsOn = "[xADOrganizationalUnit]ProductionOU"
     }
+
     xADOrganizationalUnit ProductionComputersOU
     {
       Name = "Computers"
@@ -264,6 +260,7 @@
       Ensure = 'Present'
       DependsOn = "[xADOrganizationalUnit]ProductionOU"
     }
+
     xADOrganizationalUnit ProductionServersOU
     {
       Name = "Servers"
@@ -271,6 +268,7 @@
       Ensure = 'Present'
       DependsOn = "[xADOrganizationalUnit]ProductionOU"
     }
+
     xADOrganizationalUnit ProductionGroupsOU
     {
       Name = "Groups"
@@ -278,6 +276,7 @@
       Ensure = 'Present'
       DependsOn = "[xADOrganizationalUnit]ProductionOU"
     }
+
     xADOrganizationalUnit ProductionServiceAccountsOU
     {
       Name = "Service Accounts"
@@ -285,6 +284,7 @@
       Ensure = 'Present'
       DependsOn = "[xADOrganizationalUnit]ProductionOU"
     }
+
     xADOrganizationalUnit ClassOU
     {
       Name = "Class"
@@ -292,6 +292,7 @@
       Ensure = 'Present'
       DependsOn = "[xWaitForADDomain]DscForestWait"
     }
+
     xADOrganizationalUnit ClassUsersOU
     {
       Name = "Users"
@@ -299,6 +300,7 @@
       Ensure = 'Present'
       DependsOn = "[xADOrganizationalUnit]ClassOU"
     }
+
     xADOrganizationalUnit ClassComputersOU
     {
       Name = "Computers"
@@ -306,6 +308,7 @@
       Ensure = 'Present'
       DependsOn = "[xADOrganizationalUnit]ClassOU"
     }
+
     xADOrganizationalUnit ClassGroupsOU
     {
       Name = "Groups"
@@ -313,6 +316,7 @@
       Ensure = 'Present'
       DependsOn = "[xADOrganizationalUnit]ClassOU"
     }
+
     xADUser StudentAdmin
     {
         DomainName = $DomainName
@@ -323,6 +327,7 @@
         Path = "OU=Users,OU=Class,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ClassUsersOU"
     }
+
     xADUser HelpdeskUser
     {
         DomainName = $DomainName
@@ -333,6 +338,7 @@
         Path = "OU=Staff,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionStaffOU"
     }
+
     xADUser AccountingUser
     {
         DomainName = $DomainName
@@ -343,6 +349,7 @@
         Path = "OU=Staff,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionStaffOU"
     }
+    
     xADUser ServerAdmin
     {
         DomainName = $DomainName
@@ -352,7 +359,20 @@
         Ensure = "Present"
         Path = "OU=Staff,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionStaffOU"
-    }  
+    } 
+
+    xADUser SQLAdmin
+    {
+        DomainName = $DomainName
+        DomainAdministratorCredential = $DomainAdminCreds
+        UserName = $SQLAdminUsername
+        Password = $DomainSQLAdminCreds
+        ServicePrincipalNames = "MSSQLSvc/sqltest01.$($DomainName)","MSSQLSvc/sqltest01.$($DomainName):1433"
+        Ensure = "Present"
+        Path = "OU=Staff,OU=Production,DC=ad,DC=waad,DC=training"
+        DependsOn = "[xADOrganizationalUnit]ProductionStaffOU"
+    }
+
     xADUser BackupUser
     {
         DomainName = $DomainName
@@ -363,6 +383,7 @@
         Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
     }
+
     xADUser HelperAccount
     {
         DomainName = $DomainName
@@ -373,6 +394,7 @@
         Path = "OU=Service Accounts,OU=Production,DC=ad,DC=waad,DC=training"
         DependsOn = "[xADOrganizationalUnit]ProductionServiceAccountsOU"
     }
+
     xADGroup DomainAdmins
     {
       GroupName = "Domain Admins"
@@ -380,6 +402,20 @@
       MembersToInclude =  $ServerAdminUsername, "StudentAdmin"
       DependsOn = "[xADUser]ServerAdmin", "[xADUser]StudentAdmin"
     }
+    
+    Script SchemaAdmins
+    {
+      SetScript =  { 
+        Add-Content -Path "C:\Windows\Temp\jah-dsc-log.txt" -Value "[SchemaAdmins] Adding StudentAdmin to SchemaAdmins"
+        Add-ADGroupMember -Identity 'Schema Admins' -Members 'StudentAdmin'
+      }
+      GetScript =  { @{} }
+      TestScript = { 
+        (Get-AdGroupMember "Schema Admins").name -contains 'StudentAdmin'
+       }
+       DependsOn = "[xADUser]StudentAdmin"
+    }
+
     xADGroup AccountingUsers
     {
       GroupName = "Accounting Users"
@@ -391,6 +427,7 @@
       Path = "OU=Groups,OU=Production,DC=ad,DC=waad,DC=training"
       DependsOn = "[xADOrganizationalUnit]ProductionGroupsOU", "[xADUser]AccountingUser"
     }
+
     xADGroup HelpdeskUsers
     {
       GroupName = "HelpdeskUsers"
@@ -398,10 +435,11 @@
       Category = "Security"
       Description = "The valiant frontline of IT Support"
       Ensure = 'Present'
-      MembersToInclude = $HelpDeskUserUsername, $HelperAccountUsername
+      MembersToInclude = $HelpDeskUserUsername
       Path = "OU=Groups,OU=Production,DC=ad,DC=waad,DC=training"
       DependsOn = "[xADOrganizationalUnit]ProductionGroupsOU", "[xADUser]HelpdeskUser"
     }
+
     xADGroup ServiceAccounts
     {
       GroupName = "ServiceAccounts"
@@ -409,15 +447,29 @@
       Category = "Security"
       Description = "Robots that do our bidding"
       Ensure = 'Present'
-      MembersToInclude = $BackupUserUsername
+      MembersToInclude = $BackupUserUsername, $HelperAccountUsername
       Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
-      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser"
+      DependsOn = "[xADOrganizationalUnit]ClassGroupsOU", "[xADUser]BackupUser", "[xADUser]SQLAdmin"
     }
+
+    xADGroup WorkstationAdmins
+    {
+      GroupName = "WorkstationAdmins"
+      GroupScope = "Global"
+      Category = "Security"
+      Description = "Works on my box"
+      Ensure = 'Present'
+      MembersToInclude =  $SQLAdminUsername
+      Path = "OU=Groups,OU=Class,DC=ad,DC=waad,DC=training"
+      DependsOn = "[xADUser]SQLAdmin"
+    }
+
     xTimeZone SetTimezone
     {
         IsSingleInstance = 'Yes'
-        TimeZone         = 'Pacific Standard Time'
+        TimeZone         = 'Eastern Standard Time'
     }
+    
     LocalConfigurationManager 
     {
       ConfigurationMode = 'ApplyOnly'
