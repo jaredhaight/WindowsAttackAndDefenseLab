@@ -1,32 +1,42 @@
+workflow New-ClassDeployment {
+  param (
+    [Parameter(Mandatory = $true)]
+    [string]$CsvPath,
+    [string]$WorkPath
+  )
+
+  $students = Import-Csv $CsvPath
+
+  forEach -Parallel ($student in $students) {
+    Invoke-CreateWindowsAttackAndDefenseLab -StudentCode $student.Code -Region $student.Region -TemplateFile $WorkPath\azuredeploy.json -TemplateParameterFile $WorkPath\azuredeploy.parameters.json
+  }
+}
+
+
 function Invoke-CreateWindowsAttackAndDefenseLab {
   [CmdletBinding()]
   Param(  
     [Parameter(Mandatory = $True)]
     [string]$StudentCode,
-    [string]$TemplateFile = "./azuredeploy.json",
-    [string]$TemplateParameterFile = "./azuredeploy.parameters.json",
+    [string]$TemplateFile = ".\azuredeploy.json",
+    [string]$TemplateParameterFile = ".\azuredeploy.parameters.json",
     [string]$Region = "eastus2",
     [int]$place = 1,
     [int]$total = 1,
     [switch]$Test
   )
   
-  # Import Azure Service Management module
-  Import-Module AZ
-  
   Write-Progress -Activity "Deploying." -Status "Deploying.." -CurrentOperation "[$place/$total] Deployment for $studentCode running.."
   
-  # Check if logged in to Azure
-  Try {
-    Get-AzContext -ErrorAction Stop
-  }
-  Catch {
-    Add-AzAccount -Credential $credentials
-  }
-    
   # Common Variables
-  $subscriptionId = (Get-AzContext).Subscription.SubscriptionId
-  
+  try {
+    $subscriptionId = (Get-AzContext).Subscription.SubscriptionId
+  }
+  catch {
+    Write-Error "Not logged into Azure"
+    break
+  }
+
   try {
     Get-AzResourceGroup -Name $StudentCode -Location $Region -ErrorAction Stop 
   }

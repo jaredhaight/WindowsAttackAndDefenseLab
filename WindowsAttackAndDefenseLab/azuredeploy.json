@@ -218,22 +218,37 @@
   },
   "variables": {
     "vnetID": "[resourceId(resourceGroup().name, 'Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
-    "subnetId": "[concat(variables('vnetID'),'/subnets/', variables('studentSubnetName'))]",
+    "subnetId": "[concat(variables('vnetID'), '/subnets/', variables('studentSubnetName'))]",
     "adNicName": "[concat(parameters('adVmName'), '-nic')]",
     "linuxNicName": "[concat(parameters('linuxVmName'), '-nic')]",
-    "homeNicName": "[concat(parameters('homeVmName'),'-nic')]",
-    "terminalServerNicName": "[concat(parameters('terminalServerVmName'),'-nic')]",
-    "userDesktopNicName": "[concat(parameters('userDesktopVmName'),'-nic')]",
-    "adminDesktopNicName": "[concat(parameters('adminDesktopVmName'),'-nic')]",
-    "homePublicIpName": "[concat(parameters('studentCode'),'-home-pip')]",
-    "linuxPublicIpName": "[concat(parameters('studentCode'),'-linux-pip')]",
+    "homeNicName": "[concat(parameters('homeVmName'), '-nic')]",
+    "terminalServerNicName": "[concat(parameters('terminalServerVmName'), '-nic')]",
+    "userDesktopNicName": "[concat(parameters('userDesktopVmName'), '-nic')]",
+    "adminDesktopNicName": "[concat(parameters('adminDesktopVmName'), '-nic')]",
+    "homePublicIpName": "[concat(parameters('studentCode'), '-home-pip')]",
+    "linuxPublicIpName": "[concat(parameters('studentCode'), '-linux-pip')]",
+    "storageAccountName": "[concat(parameters('studentCode'), 'sa')]",
     "domainJoinOptions": "3",
-    "sshKeyPath": "[concat('/home/',parameters('linuxAdminUsername'),'/.ssh/authorized_keys')]",
-    "studentSubnetName": "[concat(parameters('studentCode'),'subnet')]",
-    "virtualNetworkName": "[concat(parameters('studentCode'),'storage')]",
+    "sshKeyPath": "[concat('/home/', parameters('linuxAdminUsername'), '/.ssh/authorized_keys')]",
+    "studentSubnetName": "[concat(parameters('studentCode'), 'subnet')]",
+    "virtualNetworkName": "[concat(parameters('studentCode'), 'storage')]",
     "networkSecurityGroup": "[concat('waad.training-nsg-', resourceGroup().location)]"
   },
   "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountName')]",
+      "kind": "StorageV2",
+      "apiVersion": "2019-04-01",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Premium_LRS"
+      },
+      "properties": {},
+      "tags": {
+        "displayName": "StorageAccount"
+      }
+    },
     {
       "type": "Microsoft.Network/virtualNetworks",
       "name": "[variables('virtualNetworkName')]",
@@ -293,6 +308,7 @@
       "apiVersion": "2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
       "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
         "[resourceId('Microsoft.Network/networkInterfaces', variables('adNicName'))]"
       ],
       "location": "[resourceGroup().location]",
@@ -314,6 +330,11 @@
             "version": "latest"
           },
           "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://', variables('storageAccountName'), '.blob.core.windows.net/vhds/', parameters('adVmName'), 'disk0.vhd')]"
+            },
+            "caching": "ReadWrite",
             "createOption": "FromImage"
           }
         },
@@ -408,7 +429,7 @@
       "properties": {
         "publicIPAllocationMethod": "Dynamic",
         "dnsSettings": {
-          "domainNameLabel": "[concat(parameters('StudentCode'),'-linux')]"
+          "domainNameLabel": "[concat(parameters('StudentCode'), '-linux')]"
         }
       },
       "tags": {
@@ -461,6 +482,7 @@
       "name": "[parameters('linuxVmName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
         "[resourceId('Microsoft.Network/networkInterfaces', variables('linuxNicName'))]"
       ],
       "properties": {
@@ -489,7 +511,12 @@
             "sku": "[parameters('linuxImageSku')]",
             "version": "latest"
           },
-          "osDisk": {
+          "osDisk": {           
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://', variables('storageAccountName'), '.blob.core.windows.net/vhds/', parameters('linuxVmName'), 'disk0.vhd')]"
+            },
+            "caching": "ReadWrite",
             "createOption": "FromImage"
           }
         },
@@ -508,7 +535,7 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('linuxVmName'),'/bootstrap')]",
+      "name": "[concat(parameters('linuxVmName'), '/bootstrap')]",
       "apiVersion": "2016-03-30",
       "location": "[resourceGroup().location]",
       "dependsOn": [
@@ -521,7 +548,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "fileUris": [
-            "[concat(parameters('dscUrl'),'linux-bootstrap.sh')]"
+            "[concat(parameters('dscUrl'), 'linux-bootstrap.sh')]"
           ],
           "commandToExecute": "[concat('bash linux-bootstrap.sh ', parameters('LinuxClassFolderUrl'))]"
         }
@@ -589,6 +616,7 @@
       "name": "[parameters('homeVmName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
         "[resourceId('Microsoft.Network/networkInterfaces', variables('homeNicName'))]"
       ],
       "properties": {
@@ -608,6 +636,11 @@
             "version": "latest"
           },
           "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://', variables('storageAccountName'), '.blob.core.windows.net/vhds/', parameters('homeVmName'), 'disk0.vhd')]"
+            },
+            "caching": "ReadWrite",
             "createOption": "FromImage"
           }
         },
@@ -627,11 +660,11 @@
     {
       "apiVersion": "2016-03-30",
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('homeVmName'),'/joindomain')]",
+      "name": "[concat(parameters('homeVmName'), '/joindomain')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', parameters('homeVmName'))]",
-        "[resourceId(parameters('subscriptionId'), resourceGroup().name,'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
+        "[resourceId(parameters('subscriptionId'), resourceGroup().name, 'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
       ],
       "properties": {
         "publisher": "Microsoft.Compute",
@@ -656,11 +689,11 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('homeVmName'),'/dscHomeConfig')]",
+      "name": "[concat(parameters('homeVmName'), '/dscHomeConfig')]",
       "apiVersion": "2015-06-15",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('homeVmName'),'joinDomain')]"
+        "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('homeVmName'), 'joinDomain')]"
       ],
       "properties": {
         "publisher": "Microsoft.Powershell",
@@ -730,6 +763,7 @@
       "name": "[parameters('terminalServerVmName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
         "[resourceId('Microsoft.Network/networkInterfaces', variables('terminalServerNicName'))]"
       ],
       "properties": {
@@ -749,6 +783,11 @@
             "version": "latest"
           },
           "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://', variables('storageAccountName'), '.blob.core.windows.net/vhds/', parameters('terminalServerVmName'), 'disk0.vhd')]"
+            },
+            "caching": "ReadWrite",
             "createOption": "FromImage"
           }
         },
@@ -768,11 +807,11 @@
     {
       "apiVersion": "2016-03-30",
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('terminalServerVmName'),'/joindomain')]",
+      "name": "[concat(parameters('terminalServerVmName'), '/joindomain')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', parameters('terminalServerVmName'))]",
-        "[resourceId(parameters('subscriptionId'), resourceGroup().name,'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
+        "[resourceId(parameters('subscriptionId'), resourceGroup().name, 'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
       ],
       "properties": {
         "publisher": "Microsoft.Compute",
@@ -797,11 +836,11 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('terminalServerVmName'),'/dscServerConfig')]",
+      "name": "[concat(parameters('terminalServerVmName'), '/dscServerConfig')]",
       "apiVersion": "2015-06-15",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('terminalServerVmName'),'joinDomain')]"
+        "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('terminalServerVmName'), 'joinDomain')]"
       ],
       "properties": {
         "publisher": "Microsoft.Powershell",
@@ -870,6 +909,7 @@
       "name": "[parameters('userDesktopVmName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
         "[resourceId('Microsoft.Network/networkInterfaces', variables('userDesktopNicName'))]"
       ],
       "properties": {
@@ -889,6 +929,11 @@
             "version": "latest"
           },
           "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://', variables('storageAccountName'), '.blob.core.windows.net/vhds/', parameters('userDesktopVmName'), 'disk0.vhd')]"
+            },
+            "caching": "ReadWrite",
             "createOption": "FromImage"
           }
         },
@@ -908,11 +953,11 @@
     {
       "apiVersion": "2016-03-30",
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('userDesktopVmName'),'/joindomain')]",
+      "name": "[concat(parameters('userDesktopVmName'), '/joindomain')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', parameters('userDesktopVmName'))]",
-        "[resourceId(parameters('subscriptionId'), resourceGroup().name,'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
+        "[resourceId(parameters('subscriptionId'), resourceGroup().name, 'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
       ],
       "properties": {
         "publisher": "Microsoft.Compute",
@@ -936,11 +981,11 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('userDesktopVmName'),'/dscServerConfig')]",
+      "name": "[concat(parameters('userDesktopVmName'), '/dscServerConfig')]",
       "apiVersion": "2015-06-15",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('userDesktopVmName'),'joinDomain')]"
+        "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('userDesktopVmName'), 'joinDomain')]"
       ],
       "properties": {
         "publisher": "Microsoft.Powershell",
@@ -1015,6 +1060,7 @@
       "name": "[parameters('adminDesktopVmName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
         "[resourceId('Microsoft.Network/networkInterfaces', variables('adminDesktopNicName'))]"
       ],
       "properties": {
@@ -1034,6 +1080,11 @@
             "version": "latest"
           },
           "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://', variables('storageAccountName'), '.blob.core.windows.net/vhds/', parameters('adminDesktopVmName'), 'disk0.vhd')]"
+            },
+            "caching": "ReadWrite",
             "createOption": "FromImage"
           }
         },
@@ -1053,11 +1104,11 @@
     {
       "apiVersion": "2016-03-30",
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('adminDesktopVmName'),'/joindomain')]",
+      "name": "[concat(parameters('adminDesktopVmName'), '/joindomain')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', parameters('adminDesktopVmName'))]",
-        "[resourceId(parameters('subscriptionId'), resourceGroup().name,'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
+        "[resourceId(parameters('subscriptionId'), resourceGroup().name, 'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
       ],
       "properties": {
         "publisher": "Microsoft.Compute",
@@ -1082,11 +1133,11 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(parameters('adminDesktopVmName'),'/dscServerConfig')]",
+      "name": "[concat(parameters('adminDesktopVmName'), '/dscServerConfig')]",
       "apiVersion": "2015-06-15",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('adminDesktopVmName'),'joinDomain')]"
+        "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('adminDesktopVmName'), 'joinDomain')]"
       ],
       "properties": {
         "publisher": "Microsoft.Powershell",

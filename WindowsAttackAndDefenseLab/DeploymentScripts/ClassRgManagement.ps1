@@ -1,26 +1,15 @@
-Import-Module AzureRM
+Import-Module Az
   
-workflow Remove-AllAzureRmResourceGroups {
+workflow Remove-ClassResourceGroups {
   
-  [CmdletBinding()] 
-  Param(
-    [Parameter(Mandatory=$true)]
-    [pscredential]$Credentials
-  )
-
-  $username = $credentials.UserName.ToString()
-  Write-Output "Logging in as $username"
-  
-  Add-AzureRmAccount -Credential $credentials
-  $resourceGroups = Get-AzureRmResourceGroup -ErrorAction Stop
+  $resourceGroups = Get-AzResourceGroup
  
   if ($resourceGroups.Count -gt 0) {
     forEach -parallel -throttle 30 ($resourceGroup in $resourceGroups) {
         $resourceGroupName = $resourceGroup.ResourceGroupName.toString()
         if ($resourceGroupName -notlike "*master" -and $resourceGroupName -notlike "cupcake*" -and $resourceGroupName -notlike "jah*") {
-            $conn = Add-AzureRmAccount -Credential $credentials
             Write-Output "[*] Removing $resourceGroupName.."
-            Remove-AzureRmResourceGroup -Name $resourceGroupName -Force
+            Remove-AzResourceGroup -Name $resourceGroupName -Force
         }
     }
   }
