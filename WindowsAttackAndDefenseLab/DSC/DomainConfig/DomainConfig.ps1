@@ -1,4 +1,4 @@
-﻿configuration DomainConfig 
+﻿configuration DomainConfig
 { 
   param 
   ( 

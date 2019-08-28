@@ -345,7 +345,7 @@
       "resources": [
         {
           "type": "extensions",
-          "name": "CreateADForest",
+          "name": "DomainConfig",
           "apiVersion": "2015-06-15",
           "location": "[resourceGroup().location]",
           "dependsOn": [
@@ -358,7 +358,7 @@
             "autoUpgradeMinorVersion": true,
             "settings": {
               "ModulesUrl": "[concat(parameters('dscUrl'), 'DomainConfig.zip')]",
-              "ConfigurationFunction": "DomainConfig.ps1\\DomainConfig')",
+              "ConfigurationFunction": "DomainConfig.ps1\\DomainConfig",
               "Properties": {
                 "DomainName": "[parameters('domainName')]",
                 "AdminCreds": {
@@ -660,7 +660,7 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', parameters('homeVmName'))]",
-        "[resourceId(parameters('subscriptionId'), resourceGroup().name, 'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
+        "[resourceId(parameters('subscriptionId'), resourceGroup().name, 'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'DomainConfig')]"
       ],
       "properties": {
         "publisher": "Microsoft.Compute",
@@ -807,7 +807,7 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', parameters('terminalServerVmName'))]",
-        "[resourceId(parameters('subscriptionId'), resourceGroup().name, 'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
+        "[resourceId(parameters('subscriptionId'), resourceGroup().name, 'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'DomainConfig')]"
       ],
       "properties": {
         "publisher": "Microsoft.Compute",
@@ -953,7 +953,7 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', parameters('userDesktopVmName'))]",
-        "[resourceId(parameters('subscriptionId'), resourceGroup().name, 'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
+        "[resourceId(parameters('subscriptionId'), resourceGroup().name, 'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'DomainConfig')]"
       ],
       "properties": {
         "publisher": "Microsoft.Compute",
@@ -1104,7 +1104,7 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/', parameters('adminDesktopVmName'))]",
-        "[resourceId(parameters('subscriptionId'), resourceGroup().name, 'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'CreateADForest')]"
+        "[resourceId(parameters('subscriptionId'), resourceGroup().name, 'Microsoft.Compute/virtualMachines/extensions', parameters('adVmName'), 'DomainConfig')]"
       ],
       "properties": {
         "publisher": "Microsoft.Compute",
